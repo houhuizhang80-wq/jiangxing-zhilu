@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>将星之路 · 军事生涯模拟</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark"></span>
+      <div class="brand-text">
+        <h1>将星之路</h1>
+        <p>军事生涯模拟</p>
+      </div>
+    </div>
+    <div class="career" id="career"></div>
+    <div class="topbar-actions">
+      <button class="btn ghost" id="btnRoute">成长路线</button>
+      <button class="btn ghost" id="btnNetwork">关系网</button>
+      <button class="btn ghost" id="btnRank">同期排名</button>
+      <button class="btn ghost" id="btnSkills">技能树</button>
+      <button class="btn ghost" id="btnAchv">成就</button>
+      <button class="btn ghost" id="btnHistory">履历</button>
+      <button class="btn ghost" id="btnRestart">重新开始</button>
+    </div>
+  </header>
+
+  <div class="merit-wrap" id="meritWrap">
+    <div class="merit-track"><div class="merit-fill" id="meritFill"></div></div>
+    <div class="merit-label" id="meritLabel"></div>
+  </div>
+
+  <main class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <section class="main" id="main"></section>
+  </main>
+
+  <footer class="disclaimer">
+    本作品为虚构军事题材模拟游戏。人物、部队番号、事件与战役均系虚构，不涉及任何现实人物、单位与事件。
+  </footer>
+</div>
+
+<div id="modalRoot"></div>
+
+<script src="js/data.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>

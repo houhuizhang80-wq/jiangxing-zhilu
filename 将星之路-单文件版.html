@@ -1,0 +1,4734 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>将星之路 · 军事生涯模拟</title>
+<style>
+/* 《将星之路》样式表 —— 浅色主题 */
+
+:root {
+  --bg: #f6f5f1;
+  --bg-alt: #efeee8;
+  --surface: #ffffff;
+  --surface-2: #faf9f6;
+  --border: #e2dfd5;
+  --border-strong: #cdc9bc;
+  --text: #23221e;
+  --text-2: #5f5c53;
+  --text-3: #8d897c;
+  --olive: #3f5a3a;
+  --olive-2: #55744d;
+  --olive-soft: #e8ede4;
+  --gold: #a8842f;
+  --gold-soft: #f5edd8;
+  --red: #a63a2e;
+  --red-soft: #f8e8e5;
+  --blue: #35618f;
+  --blue-soft: #e6eef7;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --shadow: 0 1px 2px rgba(35, 34, 30, 0.05);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+button { font-family: inherit; cursor: pointer; }
+h1, h2, h3, h4 { font-weight: 500; }
+
+#app {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 18px 20px 40px;
+}
+
+/* ---------- 顶栏 ---------- */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 14px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+.brand { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.brand-mark {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--olive);
+  position: relative;
+  flex-shrink: 0;
+}
+.brand-mark::after {
+  content: "";
+  position: absolute; inset: 9px;
+  background: var(--gold);
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+.brand-text h1 { font-size: 17px; letter-spacing: 1px; }
+.brand-text p { font-size: 11px; color: var(--text-3); letter-spacing: 2px; }
+
+.career { display: flex; align-items: center; gap: 18px; flex: 1; flex-wrap: wrap; }
+.career-item { display: flex; flex-direction: column; line-height: 1.3; }
+.career-item .k { font-size: 11px; color: var(--text-3); }
+.career-item .v { font-size: 15px; font-weight: 500; }
+.career-item .v.rank { color: var(--olive); }
+
+.topbar-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+.btn {
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 13px;
+  transition: all 0.15s;
+}
+.btn:hover { background: var(--bg-alt); }
+.btn.ghost { border-color: var(--border); color: var(--text-2); }
+.btn.primary {
+  background: var(--olive); border-color: var(--olive); color: #fff;
+}
+.btn.primary:hover { background: var(--olive-2); }
+.btn.danger { background: var(--red); border-color: var(--red); color: #fff; }
+.btn.danger:hover { opacity: 0.88; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn.block { width: 100%; }
+.btn.lg { padding: 11px 20px; font-size: 14px; }
+
+/* ---------- 功勋条 ---------- */
+.merit-wrap { margin-top: 12px; }
+.merit-track {
+  height: 8px; background: var(--bg-alt);
+  border-radius: 99px; overflow: hidden;
+  border: 1px solid var(--border);
+}
+.merit-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--olive), var(--gold));
+  transition: width 0.4s ease;
+}
+.merit-label {
+  display: flex; justify-content: space-between;
+  font-size: 11.5px; color: var(--text-3); margin-top: 5px;
+}
+
+/* ---------- 布局 ---------- */
+.layout {
+  display: grid;
+  grid-template-columns: 292px 1fr;
+  gap: 16px;
+  margin-top: 16px;
+  align-items: start;
+}
+
+.sidebar { display: flex; flex-direction: column; gap: 14px; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.card-head {
+  padding: 11px 15px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px; letter-spacing: 1px;
+  color: var(--text-2);
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--surface-2);
+}
+.card-body { padding: 14px 15px; }
+
+/* ---------- 属性 ---------- */
+.stat-row { margin-bottom: 11px; }
+.stat-row:last-child { margin-bottom: 0; }
+.stat-top {
+  display: flex; justify-content: space-between;
+  font-size: 12.5px; margin-bottom: 4px;
+}
+.stat-top .name { color: var(--text-2); }
+.stat-top .val { font-weight: 500; font-variant-numeric: tabular-nums; }
+.stat-track {
+  height: 6px; background: var(--bg-alt);
+  border-radius: 99px; overflow: hidden;
+}
+.stat-fill { height: 100%; border-radius: 99px; transition: width 0.35s; }
+.stat-fill.attr { background: var(--olive); }
+.stat-fill.derived { background: var(--blue); }
+.stat-fill.disc { background: var(--gold); }
+.stat-fill.morale { background: #c98a2e; }
+.stat-fill.health { background: #4b8a5c; }
+.stat-fill.prestige { background: #8a6bb0; }
+.stat-fill.trust { background: #3f7f9a; }
+.stat-fill.family { background: #b06b7a; }
+.stat-fill.bond { background: #6b8fb0; }
+.stat-hint { font-size: 11px; color: var(--text-3); margin-top: 3px; }
+.stat-delta { font-size: 11px; color: var(--olive); margin-left: 6px; }
+
+.trait-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.trait-chip {
+  font-size: 12px; padding: 3px 9px;
+  background: var(--gold-soft); color: #7a5f1c;
+  border-radius: 99px; border: 1px solid #e6d9b4;
+  cursor: help;
+}
+
+/* ---------- 主区域 ---------- */
+.main { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+
+.turn-head {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 14px; flex-wrap: wrap;
+}
+.turn-title { font-size: 15px; }
+.turn-title .stage { color: var(--olive); font-weight: 500; }
+.turn-sub { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+
+.ap-box { display: flex; align-items: center; gap: 10px; }
+.ap-pips { display: flex; gap: 4px; }
+.ap-pip {
+  width: 12px; height: 12px; border-radius: 3px;
+  background: var(--bg-alt); border: 1px solid var(--border-strong);
+}
+.ap-pip.on { background: var(--olive); border-color: var(--olive); }
+.ap-num { font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+
+.action-groups { display: flex; flex-direction: column; gap: 14px; }
+.action-group-title {
+  font-size: 11.5px; color: var(--text-3); letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 9px;
+}
+.action {
+  text-align: left;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  transition: all 0.14s;
+  position: relative;
+}
+.action:hover:not(:disabled) {
+  border-color: var(--olive-2);
+  background: var(--olive-soft);
+  transform: translateY(-1px);
+}
+.action:disabled { opacity: 0.38; cursor: not-allowed; }
+.action .a-top {
+  display: flex; justify-content: space-between; align-items: baseline;
+  gap: 8px; margin-bottom: 3px;
+}
+.action .a-name { font-size: 13.5px; font-weight: 500; }
+.action .a-ap { font-size: 11px; color: var(--olive); flex-shrink: 0; }
+.action .a-desc { font-size: 11.5px; color: var(--text-3); line-height: 1.45; }
+.action .a-count {
+  position: absolute; top: 6px; right: 8px;
+  font-size: 10px; color: #fff; background: var(--olive);
+  border-radius: 99px; padding: 0 6px; line-height: 15px;
+}
+
+.log-list { max-height: 260px; overflow-y: auto; }
+.log-item {
+  font-size: 12.5px; color: var(--text-2);
+  padding: 6px 0; border-bottom: 1px dashed var(--border);
+  display: flex; gap: 8px;
+}
+.log-item:last-child { border-bottom: none; }
+.log-item .ly { color: var(--text-3); flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.log-item.good { color: var(--olive); }
+.log-item.bad { color: var(--red); }
+.log-item.gold { color: var(--gold); }
+
+/* ---------- 弹窗 ---------- */
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(35, 34, 30, 0.42);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px; z-index: 100;
+  animation: fade 0.18s ease;
+}
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+.modal {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  width: 100%; max-width: 620px;
+  max-height: 88vh; overflow-y: auto;
+  box-shadow: 0 12px 40px rgba(35, 34, 30, 0.18);
+  animation: rise 0.2s ease;
+}
+@keyframes rise { from { transform: translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }
+.modal.wide { max-width: 860px; }
+.modal-head {
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-head .kicker {
+  font-size: 11px; letter-spacing: 2px; color: var(--text-3);
+  margin-bottom: 5px;
+}
+.modal-head h2 { font-size: 18px; }
+.modal-body { padding: 20px 22px; }
+.modal-foot {
+  padding: 14px 22px 20px;
+  display: flex; gap: 10px; justify-content: flex-end;
+  border-top: 1px solid var(--border);
+}
+
+.opt {
+  display: block; width: 100%; text-align: left;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  padding: 13px 15px; margin-bottom: 10px;
+  transition: all 0.14s;
+}
+.opt:hover { border-color: var(--olive-2); background: var(--olive-soft); }
+.opt .o-label { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+.opt .o-hint { font-size: 12px; color: var(--text-2); }
+.opt .o-hint .up { color: var(--olive); }
+.opt .o-hint .down { color: var(--red); }
+.opt.risky { border-left: 3px solid var(--red); }
+
+/* ---------- 结算 ---------- */
+.grade-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 58px; height: 58px; border-radius: 50%;
+  font-size: 26px; font-weight: 500; flex-shrink: 0;
+}
+.grade-S { background: var(--gold-soft); color: var(--gold); border: 2px solid var(--gold); }
+.grade-A { background: var(--olive-soft); color: var(--olive); border: 2px solid var(--olive-2); }
+.grade-B { background: var(--blue-soft); color: var(--blue); border: 2px solid #7ea3c8; }
+.grade-C { background: var(--bg-alt); color: var(--text-2); border: 2px solid var(--border-strong); }
+.grade-D { background: var(--red-soft); color: var(--red); border: 2px solid #d09b93; }
+
+.result-head { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
+.result-head .r-text h3 { font-size: 16px; margin-bottom: 3px; }
+.result-head .r-text p { font-size: 12.5px; color: var(--text-3); }
+
+.reward-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.reward {
+  font-size: 12.5px; padding: 5px 11px; border-radius: 99px;
+  background: var(--olive-soft); color: var(--olive);
+  border: 1px solid #cfdcc6;
+}
+.reward.bad { background: var(--red-soft); color: var(--red); border-color: #e8c9c3; }
+.reward.gold { background: var(--gold-soft); color: #7a5f1c; border-color: #e6d9b4; }
+
+.narrative {
+  font-size: 13.5px; color: var(--text-2); line-height: 1.75;
+  padding: 14px 16px; background: var(--surface-2);
+  border-left: 3px solid var(--border-strong);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  margin-bottom: 16px;
+}
+
+/* ---------- 技能树 ---------- */
+.branch { margin-bottom: 20px; }
+.branch:last-child { margin-bottom: 0; }
+.branch-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 9px;
+}
+.branch-head h3 { font-size: 14px; }
+.branch-head span { font-size: 11.5px; color: var(--text-3); }
+.skill-list { display: flex; flex-direction: column; gap: 6px; }
+.skill-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 9px 12px; border: 1px solid var(--border);
+  border-radius: var(--radius); background: var(--surface-2);
+}
+.skill-row .s-name { flex: 1; font-size: 13px; }
+.skill-lv {
+  display: flex; gap: 3px; flex-shrink: 0;
+}
+.skill-lv i {
+  width: 16px; height: 16px; border-radius: 4px;
+  background: var(--bg-alt); border: 1px solid var(--border-strong);
+  font-style: normal; font-size: 10px; line-height: 14px; text-align: center;
+  color: var(--text-3);
+}
+.skill-lv i.on { background: var(--olive); border-color: var(--olive); color: #fff; }
+.skill-row .s-cost { font-size: 12px; color: var(--text-3); width: 62px; text-align: right; flex-shrink: 0; }
+.skill-row .s-btn { flex-shrink: 0; }
+.skill-row .s-btn button {
+  border: 1px solid var(--border-strong); background: var(--surface);
+  border-radius: 7px; padding: 4px 12px; font-size: 12px;
+}
+.skill-row .s-btn button:hover:not(:disabled) { background: var(--olive-soft); border-color: var(--olive-2); }
+.skill-row .s-btn button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* ---------- 履历 ---------- */
+.timeline { position: relative; padding-left: 22px; }
+.timeline::before {
+  content: ""; position: absolute; left: 5px; top: 6px; bottom: 6px;
+  width: 1px; background: var(--border-strong);
+}
+.tl-item { position: relative; padding-bottom: 14px; }
+.tl-item:last-child { padding-bottom: 0; }
+.tl-item::before {
+  content: ""; position: absolute; left: -21px; top: 6px;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--surface); border: 2px solid var(--border-strong);
+}
+.tl-item.rank::before { border-color: var(--olive); background: var(--olive); }
+.tl-item.gold::before { border-color: var(--gold); background: var(--gold); }
+.tl-item.bad::before { border-color: var(--red); background: var(--red); }
+.tl-year { font-size: 11px; color: var(--text-3); }
+.tl-text { font-size: 13px; }
+
+/* ---------- 角色创建 ---------- */
+.setup-name { margin-bottom: 20px; }
+.setup-name label { display: block; font-size: 12.5px; color: var(--text-2); margin-bottom: 6px; }
+.setup-name input {
+  width: 100%; padding: 10px 13px; font-size: 14px;
+  border: 1px solid var(--border-strong); border-radius: var(--radius);
+  background: var(--surface-2); color: var(--text); font-family: inherit;
+}
+.setup-name input:focus { outline: none; border-color: var(--olive-2); background: #fff; }
+
+.alloc-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 12px;
+}
+.alloc-head h3 { font-size: 14px; }
+.alloc-head .pts { font-size: 13px; color: var(--olive); font-weight: 500; }
+.alloc-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 0; border-bottom: 1px dashed var(--border);
+}
+.alloc-row:last-of-type { border-bottom: none; }
+.alloc-row .an { width: 52px; font-size: 13.5px; flex-shrink: 0; }
+.alloc-row .ad { flex: 1; font-size: 11.5px; color: var(--text-3); }
+.alloc-ctrl { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.alloc-ctrl button {
+  width: 26px; height: 26px; border-radius: 7px;
+  border: 1px solid var(--border-strong); background: var(--surface);
+  font-size: 15px; line-height: 1; color: var(--text-2);
+}
+.alloc-ctrl button:hover:not(:disabled) { background: var(--olive-soft); border-color: var(--olive-2); }
+.alloc-ctrl button:disabled { opacity: 0.3; cursor: not-allowed; }
+.alloc-ctrl .av { width: 30px; text-align: center; font-weight: 500; font-variant-numeric: tabular-nums; }
+
+.trait-pick { display: flex; flex-wrap: wrap; gap: 8px; }
+.trait-opt {
+  border: 1px solid var(--border); background: var(--surface-2);
+  border-radius: var(--radius); padding: 9px 12px; text-align: left;
+  transition: all 0.14s; max-width: 100%;
+}
+.trait-opt:hover { border-color: var(--olive-2); }
+.trait-opt.on { border-color: var(--olive); background: var(--olive-soft); }
+.trait-opt .t-name { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+.trait-opt .t-desc { font-size: 11.5px; color: var(--text-3); }
+
+/* ---------- 结局 ---------- */
+.ending-hero {
+  text-align: center; padding: 30px 20px 24px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+.ending-hero .e-kicker { font-size: 11px; letter-spacing: 3px; color: var(--text-3); margin-bottom: 12px; }
+.ending-hero h2 { font-size: 26px; margin-bottom: 8px; letter-spacing: 2px; }
+.ending-hero .e-rank { font-size: 13px; color: var(--text-2); }
+.ending-hero .e-star {
+  width: 52px; height: 52px; margin: 0 auto 16px;
+  background: var(--gold);
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+.ending-hero.tier-warn .e-star { background: var(--red); }
+.ending-hero.tier-plain .e-star { background: var(--border-strong); }
+
+.summary-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px; margin-bottom: 18px;
+}
+.summary-cell {
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 11px 13px;
+}
+.summary-cell .sc-k { font-size: 11px; color: var(--text-3); margin-bottom: 3px; }
+.summary-cell .sc-v { font-size: 16px; font-weight: 500; }
+
+/* ---------- 空状态 ---------- */
+.empty {
+  text-align: center; padding: 40px 20px; color: var(--text-3);
+  font-size: 13px;
+}
+
+/* ================= 新增：肩章 / 位次 / 机会卡 / 任务推演 ================= */
+
+.career-item .v.good { color: var(--olive); }
+.career-item .v.bad { color: var(--red); }
+.insignia { margin-left: auto; flex-shrink: 0; }
+
+/* 机会卡 */
+.action.opp {
+  border-color: #d9c68a;
+  background: linear-gradient(180deg, #fdf8ea, #faf3e0);
+}
+.action.opp:hover:not(:disabled) { border-color: var(--gold); background: #faf1d9; }
+.action.opp .a-name { color: #7a5f1c; }
+
+/* 提示行 */
+.hint-line { font-size: 11.5px; color: var(--text-3); margin-top: 10px; line-height: 1.6; }
+
+/* 任务推演：部署 */
+.deploy-bar {
+  display: flex; align-items: baseline; gap: 6px;
+  padding: 10px 14px; margin-bottom: 14px;
+  background: var(--olive-soft); border-radius: var(--radius);
+  font-size: 13px; color: var(--olive);
+}
+.deploy-bar .deploy-left { font-size: 22px; font-weight: 500; }
+.deploy-bar .deploy-total { color: var(--text-3); font-size: 12px; }
+
+.fronts { display: flex; flex-direction: column; gap: 14px; }
+.front {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 12px 14px; background: var(--surface-2);
+}
+.front-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.front-name { font-size: 13.5px; font-weight: 500; }
+.front-hint { font-size: 11.5px; color: var(--text-3); margin-top: 2px; }
+.front-track {
+  height: 8px; background: var(--bg-alt); border-radius: 99px;
+  overflow: hidden; margin-top: 10px; border: 1px solid var(--border);
+}
+.front-fill {
+  height: 100%; background: #b9a05c; border-radius: 99px;
+  transition: width 0.25s ease;
+}
+.front-fill.full { background: var(--olive); }
+
+.preview {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 10px; margin-top: 16px;
+}
+.preview-item {
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.preview-item .pk { font-size: 11px; color: var(--text-3); }
+.preview-item .pv { font-size: 17px; font-weight: 500; }
+.preview-item .pv.grade-S { color: var(--gold); }
+.preview-item .pv.grade-A { color: var(--olive); }
+.preview-item .pv.grade-B { color: var(--blue); }
+.preview-item .pv.grade-C { color: var(--text-2); }
+.preview-item .pv.grade-D { color: var(--red); }
+
+.need-tag {
+  font-size: 11px; padding: 1px 7px; border-radius: 99px;
+  background: var(--olive-soft); color: var(--olive);
+}
+.need-tag.no { background: var(--red-soft); color: var(--red); }
+
+/* 任务结算 */
+.fronts-mini { display: flex; flex-direction: column; gap: 7px; margin-bottom: 16px; }
+.front-mini { display: flex; align-items: center; gap: 10px; }
+.front-mini .fm-name { font-size: 12px; color: var(--text-2); width: 84px; flex-shrink: 0; }
+.front-mini .front-track { flex: 1; margin-top: 0; }
+.front-mini .fm-val { font-size: 12px; color: var(--text-3); width: 38px; text-align: right; flex-shrink: 0; }
+
+.dec-block {
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 12px 14px; margin-bottom: 16px;
+}
+.dec-title { font-size: 11.5px; color: var(--text-3); letter-spacing: 1px; margin-bottom: 8px; }
+.dec-item { padding: 6px 0; border-bottom: 1px dashed var(--border); }
+.dec-item:last-child { border-bottom: none; }
+.dec-q { font-size: 12px; color: var(--text-3); }
+.dec-a { font-size: 13px; color: var(--olive); margin-top: 2px; }
+
+/* 晋升仪式 */
+.promo-art { display: flex; justify-content: center; margin-bottom: 18px; }
+.e-insignia { display: flex; justify-content: center; margin-top: 16px; }
+
+/* 同期排名 */
+.rank-list { display: flex; flex-direction: column; gap: 5px; }
+.rank-row {
+  display: grid; grid-template-columns: 34px 1fr 72px 82px 74px;
+  align-items: center; gap: 8px;
+  padding: 9px 12px; border: 1px solid var(--border);
+  border-radius: var(--radius); background: var(--surface-2);
+  font-size: 13px;
+}
+.rank-row.me { border-color: var(--olive); background: var(--olive-soft); }
+.rank-row .rk-pos { font-weight: 500; color: var(--text-3); text-align: center; }
+.rank-row.me .rk-pos { color: var(--olive); }
+.rank-row .rk-tag { font-size: 11px; color: var(--text-3); }
+.rank-row .rk-rank { font-size: 12px; color: var(--olive); }
+.rank-row .rk-merit { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-2); }
+
+/* 动效 */
+@keyframes pop {
+  0% { transform: scale(0.4); opacity: 0; }
+  60% { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.pop { animation: pop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(168, 132, 47, 0.5); }
+  50% { box-shadow: 0 0 0 10px rgba(168, 132, 47, 0); }
+}
+.ending-hero .e-star { animation: glow 1.8s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pop, .ending-hero .e-star { animation: none; }
+}
+
+/* ================= 成长路线 ================= */
+.route-list { display: flex; flex-direction: column; gap: 12px; }
+
+.route-card {
+  display: block; width: 100%; text-align: left;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--olive);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  padding: 14px 16px;
+  transition: all 0.15s;
+}
+.route-card:hover { background: #fff; transform: translateX(3px); box-shadow: var(--shadow); }
+.rc-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.rc-name { font-size: 15px; font-weight: 500; }
+.rc-tag { font-size: 11.5px; color: var(--text-3); }
+.rc-desc { font-size: 12.5px; color: var(--text-2); margin: 5px 0 9px; }
+.rc-line { font-size: 12px; color: var(--text-2); line-height: 1.7; }
+.rc-line b { color: var(--text); font-weight: 500; margin-right: 8px; }
+.rc-motto { font-size: 12px; color: var(--gold); margin-top: 8px; }
+
+.route-meta { display: flex; flex-direction: column; gap: 7px; margin-top: 14px; }
+.rm-row { display: flex; gap: 12px; font-size: 12.5px; }
+.rm-row b { color: var(--text-2); font-weight: 500; width: 68px; flex-shrink: 0; }
+.rm-row span { color: var(--text); }
+
+.route-gates { display: flex; flex-direction: column; gap: 6px; }
+.route-gate {
+  display: flex; align-items: center; gap: 14px;
+  padding: 8px 13px; border: 1px solid var(--border);
+  border-radius: var(--radius); background: var(--surface-2); font-size: 12.5px;
+}
+.route-gate .rg-rank { width: 44px; color: var(--olive); font-weight: 500; flex-shrink: 0; }
+.route-gate .rg-need { color: var(--text-2); }
+
+.route-switch-list { display: flex; flex-direction: column; gap: 8px; }
+.route-switch {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding: 11px 14px; border: 1px solid var(--border);
+  border-radius: var(--radius); background: var(--surface-2); text-align: left;
+  transition: all 0.14s;
+}
+.route-switch:hover:not(:disabled) { border-color: var(--olive-2); background: var(--olive-soft); }
+.route-switch:disabled { opacity: 0.4; cursor: not-allowed; }
+.route-switch .rs-name { font-size: 13px; font-weight: 500; }
+.route-switch .rs-cost { font-size: 11.5px; color: var(--text-3); }
+
+.branch.route-branch { border-left: 3px solid var(--olive); padding-left: 12px; }
+.route-badge {
+  font-size: 10.5px; padding: 1px 7px; border-radius: 99px;
+  background: var(--olive-soft); color: var(--olive); font-weight: 400;
+  margin-left: 6px; vertical-align: middle;
+}
+
+/* ================= 入伍方式 / 家训 / 成就 / S 级指令 ================= */
+.enlist-pick { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+.enlist-card {
+  text-align: left; border: 1px solid var(--border);
+  border-radius: var(--radius); background: var(--surface-2);
+  padding: 12px 14px; transition: all 0.14s;
+}
+.enlist-card:hover { border-color: var(--olive-2); background: #fff; }
+.enlist-card.on { border-color: var(--olive); background: var(--olive-soft); }
+.ec-name { font-size: 13.5px; font-weight: 500; margin-bottom: 4px; }
+.ec-desc { font-size: 11.5px; color: var(--text-3); line-height: 1.5; margin-bottom: 6px; }
+.ec-meta { font-size: 11px; color: var(--olive); }
+
+.motto-pick { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 9px; }
+.motto-opt {
+  text-align: left; border: 1px solid #e6d9b4;
+  border-radius: var(--radius); background: var(--gold-soft);
+  padding: 11px 13px; transition: all 0.14s;
+}
+.motto-opt:hover { border-color: var(--gold); }
+.motto-opt.on { border-color: var(--gold); background: #f3e8cb; box-shadow: inset 0 0 0 1px var(--gold); }
+.mo-name { font-size: 13px; font-weight: 500; color: #7a5f1c; margin-bottom: 3px; }
+.mo-desc { font-size: 11.5px; color: var(--text-2); line-height: 1.5; }
+
+.mini-tag {
+  font-size: 10.5px; padding: 1px 7px; border-radius: 99px;
+  background: var(--gold-soft); color: #7a5f1c; font-weight: 400;
+  margin-left: 5px; vertical-align: middle;
+}
+
+.achv-list { display: flex; flex-direction: column; gap: 4px; }
+.achv-row {
+  display: grid; grid-template-columns: 26px 92px 1fr;
+  align-items: baseline; gap: 8px;
+  padding: 7px 12px; border: 1px solid var(--border);
+  border-radius: var(--radius); background: var(--surface-2);
+  font-size: 12.5px; opacity: 0.55;
+}
+.achv-row.on { opacity: 1; border-color: #e6d9b4; background: var(--gold-soft); }
+.achv-row .ar-mark { color: var(--border-strong); font-size: 14px; text-align: center; }
+.achv-row.on .ar-mark { color: var(--gold); }
+.achv-row .ar-name { font-weight: 500; }
+.achv-row .ar-desc { color: var(--text-3); font-size: 11.5px; }
+
+.s-unlock {
+  font-size: 10px; padding: 1px 6px; border-radius: 99px;
+  background: var(--bg-alt); color: var(--text-3); font-weight: 400;
+  margin-left: 5px; vertical-align: middle;
+}
+.s-unlock.on { background: var(--olive); color: #fff; }
+.s-unlock-note {
+  font-size: 11px; color: var(--olive); margin-top: 7px;
+  padding: 7px 10px; background: var(--olive-soft); border-radius: 6px; line-height: 1.6;
+}
+
+/* ================= 具名 NPC 关系网 ================= */
+.npc-groups { display: flex; flex-direction: column; gap: 16px; }
+.npc-group { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.npc-group-head {
+  padding: 8px 12px; background: var(--surface-2); border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; gap: 10px; font-size: 12px;
+}
+.npc-group-head span:first-child { font-weight: 500; color: var(--olive); }
+.npc-group-head span:last-child { color: var(--text-3); }
+.npc-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; border-bottom: 1px dashed var(--border); background: #fff;
+}
+.npc-row:last-child { border-bottom: none; }
+.npc-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--olive-soft); color: var(--olive); font-size: 15px; font-weight: 500; flex-shrink: 0;
+}
+.npc-main { flex: 1; min-width: 0; }
+.npc-name { font-size: 13px; font-weight: 500; }
+.npc-name span { font-size: 10.5px; color: var(--text-3); font-weight: 400; margin-left: 6px; }
+.npc-rel { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+.npc-track { height: 4px; border-radius: 99px; overflow: hidden; background: var(--bg-alt); margin-top: 4px; }
+.npc-track div { height: 100%; background: var(--olive); border-radius: 99px; }
+.npc-growth { width: 76px; text-align: right; flex-shrink: 0; }
+.npc-growth span { display: block; font-size: 10px; color: var(--text-3); }
+.npc-growth b { font-size: 13px; font-weight: 500; color: var(--text-2); }
+.npc-growth em { display: block; font-size: 10px; color: var(--gold); font-style: normal; }
+
+/* ---------- 响应式 ---------- */
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { order: 2; }
+  .main { order: 1; }
+  .career { gap: 14px; }
+  #app { padding: 12px 12px 30px; }
+  .topbar { flex-wrap: wrap; }
+}
+
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark"></span>
+      <div class="brand-text">
+        <h1>将星之路</h1>
+        <p>军事生涯模拟</p>
+      </div>
+    </div>
+    <div class="career" id="career"></div>
+    <div class="topbar-actions">
+      <button class="btn ghost" id="btnRoute">成长路线</button>
+      <button class="btn ghost" id="btnNetwork">关系网</button>
+      <button class="btn ghost" id="btnRank">同期排名</button>
+      <button class="btn ghost" id="btnSkills">技能树</button>
+      <button class="btn ghost" id="btnAchv">成就</button>
+      <button class="btn ghost" id="btnHistory">履历</button>
+      <button class="btn ghost" id="btnRestart">重新开始</button>
+    </div>
+  </header>
+
+  <div class="merit-wrap" id="meritWrap">
+    <div class="merit-track"><div class="merit-fill" id="meritFill"></div></div>
+    <div class="merit-label" id="meritLabel"></div>
+  </div>
+
+  <main class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <section class="main" id="main"></section>
+  </main>
+
+  <footer class="disclaimer">
+    本作品为虚构军事题材模拟游戏。人物、部队番号、事件与战役均系虚构，不涉及任何现实人物、单位与事件。
+  </footer>
+</div>
+
+<div id="modalRoot"></div>
+
+<script>
+/* ============================================================
+   《将星之路》游戏数据层
+   军衔 / 阶段 / 属性 / 行动 / 技能 / 特质 / 事件 / 任务 / 结局
+   ============================================================ */
+
+/* ---------- 六维基础属性 ---------- */
+const ATTRS = [
+  { key: 'tibo',     name: '体魄', desc: '体能上限、伤病恢复、长期服役' },
+  { key: 'zhimou',   name: '智谋', desc: '学习效率、参谋业务、复杂任务判定' },
+  { key: 'tongshuai',name: '统率', desc: '部队士气加成、指挥规模上限' },
+  { key: 'meili',    name: '魅力', desc: '团结官兵、思想工作、拥军爱民' },
+  { key: 'xinnian',  name: '信念', desc: '忠诚与荣誉感，抗诱惑、抗动摇' },
+  { key: 'yizhi',    name: '意志', desc: '抗压、吃苦耐劳、危机任务判定' }
+];
+
+const ATTR_BASE = 30;          // 每维初始值
+const ATTR_ALLOC = 30;         // 可自由分配点数
+const ATTR_ALLOC_MAX = 10;     // 单项最多可加
+const ATTR_CAP = 110;          // 硬上限
+const ATTR_SOFT_CAP = 100;     // 常规上限
+
+/* ---------- 派生指标 ---------- */
+const DERIVED = [
+  { key: 'military',    name: '军事素养', desc: '战术理解、演训成绩加成' },
+  { key: 'political',   name: '政治素养', desc: '政治教育、谈心谈话成效' },
+  { key: 'professional',name: '专业能力', desc: '装备、通信、后勤等岗位技能' }
+];
+
+/* ---------- 动态状态 ---------- */
+const STATES = [
+  { key: 'morale',   name: '士气',   desc: '随任务成败与带兵成效波动', max: 100, init: 70 },
+  { key: 'health',   name: '健康',   desc: '随年龄与伤病下降，影响行动力', max: 100, init: 90 },
+  { key: 'prestige', name: '威望',   desc: '部属与同僚对你的评价', max: 100, init: 10 },
+  { key: 'trust',    name: '首长信任', desc: '影响任务分配与推荐力度', max: 100, init: 20 },
+  { key: 'bond',     name: '搭档默契', desc: '军政双主官的协同程度', max: 100, init: 20 },
+  { key: 'family',   name: '家庭',   desc: '长期后盾，影响抗压与士气', max: 100, init: 40 }
+];
+
+/* ---------- 军衔阶梯（功勋门槛呈加速曲线） ---------- */
+const RANKS = [
+  { name: '列兵',       need: 0,     stage: 'recruit' },
+  { name: '上等兵',     need: 150,   stage: 'recruit' },
+  { name: '下士',       need: 300,   stage: 'nco' },
+  { name: '中士',       need: 550,   stage: 'nco' },
+  { name: '上士',       need: 850,   stage: 'nco' },
+  { name: '四级军士长', need: 1200,  stage: 'nco' },
+  { name: '三级军士长', need: 1600,  stage: 'nco' },
+  { name: '二级军士长', need: 2100,  stage: 'nco' },
+  { name: '一级军士长', need: 2700,  stage: 'nco' },
+  { name: '少尉',       need: 3400,  stage: 'officer' },
+  { name: '中尉',       need: 4600,  stage: 'officer' },
+  { name: '上尉',       need: 6200,  stage: 'officer' },
+  { name: '少校',       need: 8200,  stage: 'field' },
+  { name: '中校',       need: 11000, stage: 'field' },
+  { name: '上校',       need: 14500, stage: 'field' },
+  { name: '大校',       need: 19000, stage: 'field' },
+  { name: '少将',       need: 25000, stage: 'general' },
+  { name: '中将',       need: 34000, stage: 'general' },
+  { name: '上将',       need: 100000, stage: 'marshal' },
+  { name: '大元帅',     need: 100000, stage: 'marshal' }
+];
+
+/* 高阶军衔的复合条件：功勋之外，还须威望、纪律与传承同时达标
+   （对应"越级晋升须重大立功"，让最高军衔成为真正的成就而非数值累加） */
+const RANK_GATES = {
+  16: { prestige: 48, disc: 62 },                       // 少将
+  17: { prestige: 62, disc: 70 },                       // 中将
+  18: { prestige: 66, disc: 76, heir: 2 },              // 上将
+  19: { prestige: 62, disc: 85, heir: 3, deeds: 2 }     // 大元帅
+};
+
+/* ---------- 三条成长路线 ----------
+   第 11 年（进入尉官期）必须做出抉择，此后主干锁定。
+   每条路线有自己的专属行动、技能折扣、任务加成与晋升指标要求。 */
+const ROUTE_STAGE = 'officer';      // 在此阶段开始选择路线
+const ROUTE_SWITCH_COST = { merit: 3000, prestige: 12 };
+
+const ROUTES = {
+  command: {
+    key:'command', name:'军事指挥线', short:'指挥',
+    desc:'带兵打仗、演训组织、战役指挥',
+    motto:'枪杆子握在手里，就得能打仗、打胜仗。',
+    branch:'command',
+    stat:'military', statName:'军事素养',
+    extraKey:'tongshuai', extraName:'统率',
+    gateNeeds:[72, 86, 96], extraNeeds:[68, 80, 90],
+    color:'#8a4a2a'
+  },
+  political: {
+    key:'political', name:'政治工作线', short:'政工',
+    desc:'思想教育、谈心谈话、双主官协作',
+    motto:'把人的工作做通了，部队才有魂。',
+    branch:'political',
+    stat:'political', statName:'政治素养',
+    extraKey:'meili', extraName:'魅力',
+    gateNeeds:[72, 86, 96], extraNeeds:[68, 80, 90],
+    color:'#8a2a4a'
+  },
+  staff: {
+    key:'staff', name:'参谋后装线', short:'参谋',
+    desc:'战局推演、保障规划、装备建设',
+    motto:'算得清、保得上，仗才打得久。',
+    branch:'support',
+    stat:'professional', statName:'专业能力',
+    extraKey:'discipline', extraName:'作风纪律',
+    gateNeeds:[78, 90, 100], extraNeeds:[64, 72, 76],
+    color:'#2a4a8a'
+  }
+};
+
+/* 路线专属行动：本路线的强化版行动，只有选定该路线后才能使用。
+   三条线的功勋收益刻意拉平（差别体现在属性方向与附带效果上），
+   否则会出现"某条路线天然更强"的失衡。 */
+const ROUTE_ACTIONS = [
+  /* 军事指挥线 —— 军事素养与统率 */
+  { id:'r_cmd_train',  name:'实战化训练', ap:2, min:2, cat:'军事', route:'command',
+    desc:'军事素养 +4 · 统率 +2 · 功勋 +260', fx:{ dv:{ military:4 }, attr:{ tongshuai:2 }, merit:260 } },
+  { id:'r_cmd_command',name:'战役指挥研练', ap:3, min:3, cat:'军事', route:'command',
+    desc:'军事素养 +6 · 统率 +3 · 功勋 +480', fx:{ dv:{ military:6 }, attr:{ tongshuai:3 }, merit:480 } },
+  { id:'r_cmd_post',   name:'主官岗位历练', ap:3, min:4, cat:'管理', route:'command',
+    desc:'统率 +4 · 威望 +5 · 功勋 +600', fx:{ attr:{ tongshuai:4 }, st:{ prestige:5 }, merit:600 } },
+  { id:'r_cmd_war',    name:'联合作战筹划', ap:4, min:5, cat:'军事', route:'command',
+    desc:'军事素养 +7 · 统率 +4 · 功勋 +1200', fx:{ dv:{ military:7 }, attr:{ tongshuai:4 }, merit:1200 } },
+
+  /* 政治工作线 —— 政治素养与魅力 */
+  { id:'r_pol_class',  name:'思想教育课', ap:2, min:2, cat:'政治', route:'political',
+    desc:'政治素养 +4 · 魅力 +2 · 士气 +3 · 功勋 +260', fx:{ dv:{ political:4 }, attr:{ meili:2 }, st:{ morale:3 }, merit:260 } },
+  { id:'r_pol_talk',   name:'谈心谈话室', ap:3, min:3, cat:'政治', route:'political',
+    desc:'政治素养 +6 · 魅力 +3 · 搭档默契 +4 · 功勋 +480', fx:{ dv:{ political:6 }, attr:{ meili:3 }, st:{ bond:4 }, merit:480 } },
+  { id:'r_pol_build',  name:'双主官共建', ap:3, min:4, cat:'管理', route:'political',
+    desc:'政治素养 +5 · 魅力 +4 · 威望 +5 · 功勋 +600', fx:{ dv:{ political:5 }, attr:{ meili:4 }, st:{ prestige:5 }, merit:600 } },
+  { id:'r_pol_mob',    name:'政治动员', ap:4, min:5, cat:'政治', route:'political',
+    desc:'政治素养 +7 · 魅力 +4 · 士气 +4 · 功勋 +1200', fx:{ dv:{ political:7 }, attr:{ meili:4 }, st:{ morale:4 }, merit:1200 } },
+
+  /* 参谋后装线 —— 专业能力与智谋（附带纪律，是三条线里最"稳"的）
+     注意：三条线的功勋收益必须严格拉平，且不能附带技能点——
+     技能点会转化为任务战力、进而抬高功勋收入，造成"某条线天然更强"。 */
+  { id:'r_stf_wargame',name:'战局推演', ap:2, min:2, cat:'军事', route:'staff',
+    desc:'专业能力 +4 · 智谋 +2 · 功勋 +260', fx:{ dv:{ professional:4 }, attr:{ zhimou:2 }, merit:260 } },
+  { id:'r_stf_support',name:'保障规划', ap:3, min:3, cat:'管理', route:'staff',
+    desc:'专业能力 +6 · 智谋 +3 · 纪律 +2 · 功勋 +480', fx:{ dv:{ professional:6, discipline:2 }, attr:{ zhimou:3 }, merit:480 } },
+  { id:'r_stf_equip',  name:'装备建设论证', ap:3, min:4, cat:'管理', route:'staff',
+    desc:'专业能力 +5 · 智谋 +4 · 威望 +4 · 功勋 +600', fx:{ dv:{ professional:5 }, attr:{ zhimou:4 }, st:{ prestige:4 }, merit:600 } },
+  { id:'r_stf_strategy',name:'战略规划', ap:4, min:5, cat:'管理', route:'staff',
+    desc:'专业能力 +7 · 智谋 +4 · 纪律 +3 · 功勋 +1200', fx:{ dv:{ professional:7, discipline:3 }, attr:{ zhimou:4 }, merit:1200 } }
+];
+
+/* ---------- 生涯阶段 ----------
+   turns = 该阶段总回合数（已压缩节奏：全生涯 52 回合，单回合决策密度更高） */
+const STAGE_ORDER = ['recruit', 'nco', 'officer', 'field', 'general', 'marshal', 'legacy'];
+
+const STAGES = {
+  recruit: { key:'recruit', name:'新兵期', from:1,  to:2,  turns:4,  ap:5,  turnLabel:'半年',
+             desc:'入伍教育、队列条令、政治教育、基础体能', maxRank:1 },
+  nco:     { key:'nco',     name:'军士期', from:3,  to:10, turns:8,  ap:6,  turnLabel:'一年',
+             desc:'班排骨干、技能专精、带兵管理、士官学校进修', maxRank:8 },
+  officer: { key:'officer', name:'尉官期', from:11, to:18, turns:8,  ap:6,  turnLabel:'一年',
+             desc:'排连组织指挥、双主官协作、首次大项任务', maxRank:11 },
+  field:   { key:'field',   name:'校官期', from:19, to:30, turns:12, ap:6, turnLabel:'一年',
+             desc:'营团级组织指挥、参谋机关历练、院校深造', maxRank:15 },
+  general: { key:'general', name:'将官期', from:31, to:38, turns:8,  ap:7, turnLabel:'一年',
+             desc:'军级以上指挥、联合演训、战备建设', maxRank:17 },
+  marshal: { key:'marshal', name:'上将期', from:39, to:45, turns:7,  ap:7, turnLabel:'一年',
+             desc:'全局战略、强军改革、人才培养', maxRank:19 },
+  legacy:  { key:'legacy',  name:'传承与终局', from:46, to:50, turns:5, ap:5, turnLabel:'一年',
+             desc:'荣誉退休、功勋传承、子女接棒', maxRank:19 }
+};
+
+function stageForYear(y) {
+  if (y <= 2)  return 'recruit';
+  if (y <= 10) return 'nco';
+  if (y <= 18) return 'officer';
+  if (y <= 30) return 'field';
+  if (y <= 38) return 'general';
+  if (y <= 45) return 'marshal';
+  return 'legacy';
+}
+
+function stageIndex(key) { return STAGE_ORDER.indexOf(key); }
+
+/* ---------- 技能体系：4 分支 × 5 技能，等级 E→S ---------- */
+const SKILL_LEVELS = ['—', 'E', 'D', 'C', 'B', 'A', 'S'];
+const SKILL_COST   = [0, 1, 2, 3, 4, 6, 8];   // 升到该级所需技能点（累计 24 点满级）
+
+const SKILL_BRANCHES = [
+  { key:'combat', name:'作战专业技能', desc:'单兵层任务与比武', skills:[
+    { key:'sheji',    name:'射击' },
+    { key:'qixie',    name:'器械' },
+    { key:'tongxin',  name:'通信' },
+    { key:'jiashi',   name:'驾驶' },
+    { key:'zhencha',  name:'侦察' }
+  ]},
+  { key:'command', name:'军事指挥技能', desc:'分队层与战役层', skills:[
+    { key:'zhanshu',  name:'战术部署' },
+    { key:'zuzhi',    name:'组织指挥' },
+    { key:'canmou',   name:'参谋业务' },
+    { key:'lianhe',   name:'联合协同' },
+    { key:'daibing',  name:'带兵管理' }
+  ]},
+  { key:'political', name:'政治工作技能', desc:'政工岗位、双主官协作', skills:[
+    { key:'sixiang',  name:'思想教育' },
+    { key:'tanxin',   name:'谈心谈话' },
+    { key:'xuanchuan',name:'宣传鼓动' },
+    { key:'xinli',    name:'心理疏导' },
+    { key:'zuzhijianshe', name:'组织建设' }
+  ]},
+  { key:'support', name:'管理与保障技能', desc:'机关与主官后的治理', skills:[
+    { key:'houqin',   name:'后勤保障' },
+    { key:'zhuangbei',name:'装备管理' },
+    { key:'jundi',    name:'军地协调' },
+    { key:'tiaoling', name:'条令法规' },
+    { key:'dongyuan', name:'动员组织' }
+  ]}
+];
+
+const ALL_SKILLS = {};
+SKILL_BRANCHES.forEach(b => b.skills.forEach(s => { ALL_SKILLS[s.key] = s.name; }));
+
+/* ---------- 性格特质 ---------- */
+const TRAITS = [
+  { key:'brave',      name:'勇敢', desc:'一线任务判定 +8，但负伤概率 +3%',
+    fx:{ taskBonus:8, riskAdd:0.03 } },
+  { key:'duty',       name:'担当', desc:'任务功勋 +15%',
+    fx:{ meritMul:0.15 } },
+  { key:'blood',      name:'血性', desc:'作战类任务 +10，但纪律增长 −20%',
+    fx:{ combatBonus:10, discMul:-0.2 } },
+  { key:'steady',     name:'坚毅', desc:'士气下限 +10，抗压能力强',
+    fx:{ moraleFloor:10 } },
+  { key:'humble',     name:'谦逊', desc:'首长信任增长 +30%，威望增长 −15%',
+    fx:{ trustMul:0.3, prestigeMul:-0.15 } },
+  { key:'bold',       name:'豪爽', desc:'搭档默契与士气增长 +25%',
+    fx:{ bondMul:0.25 } },
+  { key:'impulsive',  name:'冲动', desc:'高风险选项收益 +20%，违纪概率上升',
+    fx:{ riskyGain:0.2, riskAdd:0.02 } },
+  { key:'stubborn',   name:'固执', desc:'初始信念 +5，但政治工作效果 −30%',
+    fx:{ politicalMul:-0.3 } },
+  { key:'competitive',name:'好胜', desc:'比武竞赛类任务 +12',
+    fx:{ contestBonus:12 } }
+];
+const TRAIT_MAP = {};
+TRAITS.forEach(t => { TRAIT_MAP[t.key] = t; });
+
+/* ---------- 行动项（min = 最低阶段序号） ---------- */
+const ACTIONS = [
+  /* 通用 */
+  { id:'fitness',  name:'体能训练', ap:1, min:0, cat:'训练', desc:'体魄 +2 · 健康 −1',
+    fx:{ attr:{tibo:2}, st:{health:-1} } },
+  { id:'study',    name:'理论学习', ap:1, min:0, cat:'训练', desc:'智谋 +2',
+    fx:{ attr:{zhimou:2} } },
+  { id:'poledu',   name:'政治教育', ap:1, min:0, cat:'政治', desc:'信念 +2 · 政治素养 +2 · 纪律 +1',
+    fx:{ attr:{xinnian:2}, dv:{political:2, discipline:1} } },
+  { id:'drill',    name:'条令与队列', ap:1, min:0, cat:'训练', desc:'意志 +1 · 纪律 +2',
+    fx:{ attr:{yizhi:1}, dv:{discipline:2} } },
+  { id:'rest',     name:'休息疗养', ap:1, min:0, cat:'生活', desc:'健康 +6 · 士气 +2',
+    fx:{ st:{health:6, morale:2} } },
+  { id:'family',   name:'陪伴家人', ap:1, min:0, cat:'生活', desc:'家庭 +3 · 士气 +2',
+    fx:{ st:{family:3, morale:2} } },
+  { id:'network',  name:'联络首长', ap:1, min:0, cat:'社交', desc:'首长信任 +2 · 威望 +1',
+    fx:{ st:{trust:2, prestige:1} } },
+  { id:'peer',     name:'同侪交流', ap:1, min:0, cat:'社交', desc:'士气 +1 · 专业能力 +1 · 搭档默契 +1',
+    fx:{ st:{morale:1, bond:1}, dv:{professional:1} } },
+
+  /* 新兵期 */
+  { id:'shoot',    name:'实弹射击', ap:2, min:0, cat:'军事', desc:'军事素养 +3 · 技能点 +1',
+    fx:{ dv:{military:3}, sp:1 } },
+  { id:'apparatus',name:'器械训练', ap:1, min:0, cat:'军事', desc:'体魄 +1 · 技能点 +1',
+    fx:{ attr:{tibo:1}, sp:1 } },
+
+  /* 军士期 */
+  { id:'lead',     name:'带兵管理', ap:2, min:1, cat:'管理', desc:'统率 +2 · 功勋 +60',
+    fx:{ attr:{tongshuai:2}, merit:60, dv:{military:1} } },
+  { id:'specialize',name:'技能专精', ap:2, min:1, cat:'训练', desc:'技能点 +4 · 专业能力 +2',
+    fx:{ sp:4, dv:{professional:2} } },
+  { id:'ncoSchool',name:'士官学校进修', ap:3, min:1, cat:'院校', desc:'技能点 +6 · 智谋 +3 · 功勋 +120',
+    fx:{ sp:6, attr:{zhimou:3}, merit:120 } },
+
+  /* 尉官期 */
+  { id:'command',  name:'组织指挥', ap:2, min:2, cat:'军事', desc:'统率 +2 · 军事素养 +3 · 技能点 +1',
+    fx:{ attr:{tongshuai:2}, dv:{military:3}, sp:1 } },
+  { id:'talk',     name:'谈心谈话', ap:1, min:2, cat:'政治', desc:'魅力 +2 · 政治素养 +2 · 士气 +2',
+    fx:{ attr:{meili:2}, dv:{political:2}, st:{morale:2} } },
+  { id:'partner',  name:'双主官协作', ap:1, min:2, cat:'管理', desc:'搭档默契 +3 · 威望 +1',
+    fx:{ st:{bond:3, prestige:1} } },
+  { id:'build',    name:'排连建设', ap:2, min:2, cat:'管理', desc:'威望 +2 · 统率 +1 · 功勋 +120',
+    fx:{ st:{prestige:2}, attr:{tongshuai:1}, merit:120 } },
+
+  /* 校官期 */
+  { id:'staff',    name:'参谋业务', ap:2, min:3, cat:'军事', desc:'智谋 +2 · 专业能力 +3 · 技能点 +1',
+    fx:{ attr:{zhimou:2}, dv:{professional:3}, sp:1 } },
+  { id:'unitBuild',name:'部队建设', ap:2, min:3, cat:'管理', desc:'威望 +3 · 功勋 +250 · 纪律 +1',
+    fx:{ st:{prestige:3}, merit:250, dv:{discipline:1} } },
+  { id:'academy',  name:'院校深造', ap:3, min:3, cat:'院校', desc:'技能点 +6 · 智谋 +4 · 功勋 +200 · 健康 −2',
+    fx:{ sp:6, attr:{zhimou:4}, merit:200, st:{health:-2} } },
+
+  /* 将官期 */
+  { id:'campaign', name:'战役筹划', ap:3, min:4, cat:'军事', desc:'军事素养 +5 · 统率 +2 · 功勋 +400',
+    fx:{ dv:{military:5}, attr:{tongshuai:2}, merit:400 } },
+  { id:'joint',    name:'联合演训', ap:3, min:4, cat:'军事', desc:'军事素养 +4 · 专业能力 +3 · 功勋 +450',
+    fx:{ dv:{military:4, professional:3}, merit:450 } },
+  { id:'readiness',name:'战备建设', ap:2, min:4, cat:'管理', desc:'威望 +3 · 纪律 +2 · 功勋 +300',
+    fx:{ st:{prestige:3}, dv:{discipline:2}, merit:300 } },
+
+  /* 上将期 */
+  { id:'serviceBuild', name:'军种建设', ap:3, min:5, cat:'管理', desc:'威望 +4 · 功勋 +700 · 专业能力 +4',
+    fx:{ st:{prestige:4}, merit:700, dv:{professional:4} } },
+  { id:'mentor',   name:'人才培养', ap:2, min:5, cat:'管理', desc:'培养接班人 +1 · 威望 +2 · 政治素养 +3',
+    fx:{ heir:1, st:{prestige:2}, dv:{political:3} } },
+  { id:'reform',   name:'推动改革', ap:3, min:5, cat:'管理', desc:'功勋 +800 · 威望 +3 · 可能引发争议',
+    fx:{ merit:800, st:{prestige:3}, flag:'reform' } },
+  { id:'grandBid', name:'问鼎元帅', ap:4, min:5, reqRank:18, cat:'管理',
+    desc:'向最高荣誉发起冲击 · 消耗极大，且会被议论',
+    fx:{ merit:4500, st:{ prestige:6, health:-3, morale:-2 } } }
+];
+
+/* 重大功勋：大元帅的必要条件之一 */
+const GREAT_DEED_FLAGS = ['reform', 'peace', 'rescue', 'saved_village', 'tough_area'];
+
+/* ---------- 任务模板 ----------
+   每个任务是一场可操作的小型推演，分三步：
+   ① 战前部署：把有限的「部署点」分配到三条战线。三者作用不同——
+      主攻决定评价高低 / 保障降低伤亡风险 / 预备队解锁突发情况的选项。
+      部署点总数小于三条战线的需求总和，因此必须有所取舍。
+   ② 临机决断：任务途中的突发情况，选项各有收益与风险，部分需要预备队支撑。
+   ③ 结算：根据战线完成度、战力、决断修正共同判定评价。 */
+const TASKS = [
+  {
+    id:'tk_shoot', name:'实弹射击考核', layer:'单兵层', min:0, max:1, weight:13,
+    merit:260, risk:0.05, attrs:['tibo','zhimou'], skill:'sheji', kind:'combat',
+    text:'靶场上风很大，弹药有限，成绩会直接写进你的档案。',
+    brief:'新兵连第一次实弹考核。每人十发子弹，分三组射击，成绩当场公布。',
+    deploy:3,
+    fronts:[
+      { key:'main',    name:'据枪与击发', demand:2, kind:'score',  hint:'投入越多，成绩越好' },
+      { key:'support', name:'呼吸与节奏', demand:1, kind:'risk',   hint:'投入越多，脱靶与失误越少' },
+      { key:'reserve', name:'备用弹药与心态', demand:1, kind:'option', hint:'投入越多，突发情况时可选方案越多' }
+    ],
+    decisions:[
+      { text:'第三组射击时，风向突然转为横风，弹着点明显偏移。',
+        options:[
+          { label:'立即修正风偏，重新找瞄点', hint:'评价 +10%', score:0.10 },
+          { label:'保持原瞄准点，相信手感',   hint:'评价 +3%，风险 +6%', score:0.03, risk:0.06 },
+          { label:'申请暂停，重新校枪',       hint:'需要 1 点预备队 · 评价 +6%，无风险', need:1, score:0.06 },
+          { label:'举手请示裁判',             hint:'评价 −10%，作风纪律 +3', score:-0.10, disc:3 }
+        ] }
+    ]
+  },
+  {
+    id:'tk_physical', name:'体能比武', layer:'单兵层', min:0, max:2, weight:11,
+    merit:300, risk:0.06, attrs:['tibo','yizhi'], skill:'qixie', kind:'contest',
+    text:'五公里武装越野，全连的目光都在你身上。',
+    brief:'全连武装越野比武，取前三名记入季度考核。你今天状态一般。',
+    deploy:3,
+    fronts:[
+      { key:'main',    name:'前程配速', demand:2, kind:'score',  hint:'投入越多，总成绩越好' },
+      { key:'support', name:'补给与节奏', demand:1, kind:'risk', hint:'投入越多，抽筋与掉速越少' },
+      { key:'reserve', name:'最后冲刺', demand:1, kind:'option', hint:'投入越多，关键时刻越有底' }
+    ],
+    decisions:[
+      { text:'跑到第八公里，你的小腿开始抽筋。',
+        options:[
+          { label:'咬牙坚持，不减速',       hint:'评价 +12%，风险 +12%', score:0.12, risk:0.12 },
+          { label:'放慢节奏调整呼吸',       hint:'评价 −4%，安全', score:-0.04 },
+          { label:'用备用补给处理一下',     hint:'需要 1 点预备队 · 评价 +6%', need:1, score:0.06 }
+        ] }
+    ]
+  },
+  {
+    id:'tk_contest', name:'军事大比武', layer:'单兵层', min:1, max:3, weight:11,
+    merit:760, risk:0.07, attrs:['tibo','zhimou','yizhi'], skill:'sheji', kind:'contest',
+    text:'全师尖子同场竞技，名次就是资历。',
+    brief:'师里组织军事大比武，你报了主项和副项，赛程排得很紧。',
+    deploy:3,
+    fronts:[
+      { key:'main',    name:'主项冲刺', demand:2, kind:'score',  hint:'投入越多，主项名次越好' },
+      { key:'support', name:'体能分配', demand:1, kind:'risk',   hint:'投入越多，后程崩盘越少' },
+      { key:'reserve', name:'临场应变', demand:1, kind:'option', hint:'投入越多，遇到意外越从容' }
+    ],
+    decisions:[
+      { text:'主项和副项的检录时间撞了，你只能全力准备一个。',
+        options:[
+          { label:'全力拼主项',           hint:'评价 +14%，风险 +5%', score:0.14, risk:0.05 },
+          { label:'保副项争名次',         hint:'评价 +5%，威望 +2', score:0.05, fx:{ st:{prestige:2} } },
+          { label:'找裁判协调调序',       hint:'需要 1 点预备队 · 评价 +8%', need:1, score:0.08 }
+        ] }
+    ]
+  },
+  {
+    id:'tk_drill', name:'连排战术演练', layer:'分队层', min:2, max:4, weight:13,
+    merit:900, risk:0.08, attrs:['tongshuai','zhimou'], skill:'zhanshu', kind:'normal',
+    text:'上级临机导调，你需要在十分钟内完成兵力调整。',
+    brief:'合成营战术演练，你带一个连担任主攻，导调组会随机出情况。',
+    deploy:4,
+    fronts:[
+      { key:'main',    name:'主攻方向', demand:3, kind:'score',  hint:'投入越多，战果越大' },
+      { key:'support', name:'火力与通信', demand:1, kind:'risk', hint:'投入越多，协同失误越少' },
+      { key:'reserve', name:'预备队',   demand:1, kind:'option', hint:'投入越多，突发情况应对越从容' }
+    ],
+    decisions:[
+      { text:'推进到一半，导调组通报：你部左翼出现敌军装甲分队。',
+        options:[
+          { label:'抽调主攻兵力回防',   hint:'评价 −6%，风险 −5%', score:-0.06, risk:-0.05 },
+          { label:'不管它，继续推进',   hint:'评价 +12%，风险 +10%', score:0.12, risk:0.10 },
+          { label:'派预备队拦截',       hint:'需要 1 点预备队 · 评价 +5%，无风险', need:1, score:0.05 }
+        ] }
+    ]
+  },
+  {
+    id:'tk_border', name:'边境执勤', layer:'分队层', min:1, max:4, weight:9,
+    merit:600, risk:0.10, attrs:['yizhi','tibo'], skill:'zhencha', kind:'normal',
+    text:'零下二十度的哨位上，风雪没过了膝盖。',
+    brief:'你带队执行边境巡逻任务，负责一段十余公里的边防线。',
+    deploy:3,
+    fronts:[
+      { key:'main',    name:'重点哨位', demand:2, kind:'score',  hint:'投入越多，管控越严密' },
+      { key:'support', name:'巡逻路线', demand:1, kind:'risk',   hint:'投入越多，遭遇意外越少' },
+      { key:'reserve', name:'应急组',   demand:1, kind:'option', hint:'投入越多，处置突发越有力' }
+    ],
+    decisions:[
+      { text:'凌晨两点，观察哨报告：有可疑人员越线，正朝我方一侧移动。',
+        options:[
+          { label:'立即前出拦截',       hint:'评价 +12%，风险 +12%', score:0.12, risk:0.12 },
+          { label:'上报并持续监视',     hint:'评价 +4%，作风纪律 +3', score:0.04, disc:3 },
+          { label:'派应急组处置',       hint:'需要 1 点预备队 · 评价 +8%', need:1, score:0.08 }
+        ] }
+    ]
+  },
+  {
+    id:'tk_flood', name:'抗洪抢险', layer:'分队层', min:1, max:5, weight:8,
+    merit:1000, risk:0.14, attrs:['tibo','yizhi','tongshuai'], skill:'zuzhi', kind:'rescue', flag:'rescue',
+    text:'洪水漫过堤坝，堤后是三万群众。',
+    brief:'连续暴雨，水位超警戒线两米多。你部奉命连夜驰援，负责最险的一段。',
+    deploy:4,
+    fronts:[
+      { key:'main',    name:'封堵主堤', demand:3, kind:'score',  hint:'投入越多，堤坝越稳' },
+      { key:'support', name:'物资与后送', demand:1, kind:'risk', hint:'投入越多，伤亡越少' },
+      { key:'reserve', name:'预备队',   demand:1, kind:'option', hint:'投入越多，险情处置越快' }
+    ],
+    decisions:[
+      { text:'凌晨三点，巡堤员报告：K7 段出现管涌，涌出的水浑浊发黑。',
+        options:[
+          { label:'调集主力立即封堵',   hint:'评价 +12%，风险 +6%', score:0.12, risk:0.06 },
+          { label:'派预备队处置',       hint:'需要 1 点预备队 · 评价 +6%', need:1, score:0.06 },
+          { label:'先观察，继续推进',   hint:'评价 +5%，风险 +12%', score:0.05, risk:0.12 },
+          { label:'上报指挥部等指示',   hint:'评价 −8%，作风纪律 +4', score:-0.08, disc:4 }
+        ] }
+    ]
+  },
+  {
+    id:'tk_anti', name:'反恐维稳', layer:'分队层', min:2, max:5, weight:8,
+    merit:1150, risk:0.15, attrs:['yizhi','tongshuai'], skill:'zhencha', kind:'combat',
+    text:'情报有限，窗口期只有几分钟。',
+    brief:'接到通报，某处发生劫持事件。你带队先期处置，等特战力量到位。',
+    deploy:4,
+    fronts:[
+      { key:'main',    name:'突击组', demand:3, kind:'score',  hint:'投入越多，处置越果断' },
+      { key:'support', name:'封控与疏散', demand:1, kind:'risk', hint:'投入越多，伤及无辜越少' },
+      { key:'reserve', name:'谈判与预备', demand:1, kind:'option', hint:'投入越多，可选方案越多' }
+    ],
+    decisions:[
+      { text:'建筑内传出人质喊声，现场指挥判断窗口期只有几分钟。',
+        options:[
+          { label:'强行突入',           hint:'评价 +15%，风险 +18%', score:0.15, risk:0.18 },
+          { label:'继续谈判，等特战',   hint:'评价 −5%，安全', score:-0.05 },
+          { label:'派预备队从后门突入', hint:'需要 1 点预备队 · 评价 +10%', need:1, score:0.10 }
+        ] }
+    ]
+  },
+  {
+    id:'tk_peace', name:'国际维和', layer:'分队层', min:3, max:6, weight:7,
+    merit:1600, risk:0.13, attrs:['yizhi','meili','zhimou'], skill:'jundi', kind:'peace', flag:'peace',
+    text:'蓝盔之下，你代表的是国家形象。',
+    brief:'你率维和分队进驻任务区，负责一段难民营周边的安全警戒。',
+    deploy:4,
+    fronts:[
+      { key:'main',    name:'武装巡逻', demand:3, kind:'score',  hint:'投入越多，震慑效果越好' },
+      { key:'support', name:'群众工作', demand:1, kind:'risk',   hint:'投入越多，冲突与误解越少' },
+      { key:'reserve', name:'快速反应', demand:1, kind:'option', hint:'投入越多，突发处置越有力' }
+    ],
+    decisions:[
+      { text:'当地武装人员在检查站拦住了你的车队，要求开箱检查。',
+        options:[
+          { label:'强硬交涉，拒绝检查',   hint:'评价 +8%，风险 +14%', score:0.08, risk:0.14 },
+          { label:'耐心沟通，等待放行',   hint:'评价 +2%，耗时长', score:0.02 },
+          { label:'绕道而行',             hint:'需要 1 点预备队 · 评价 +5%', need:1, score:0.05 }
+        ] }
+    ]
+  },
+  {
+    id:'tk_exercise', name:'联合演习', layer:'战役层', min:3, max:6, weight:13,
+    merit:2400, risk:0.10, attrs:['tongshuai','zhimou'], skill:'lianhe', kind:'normal',
+    text:'跨军种协同，保障线一旦被切断，全线都会出问题。',
+    brief:'多军种联合演习，你负责一个方向的合成作战指挥。',
+    deploy:4,
+    fronts:[
+      { key:'main',    name:'主攻方向', demand:3, kind:'score',  hint:'投入越多，战果越大' },
+      { key:'support', name:'保障线',   demand:1, kind:'risk',   hint:'投入越多，断供风险越低' },
+      { key:'reserve', name:'预备队',   demand:1, kind:'option', hint:'投入越多，应变越从容' }
+    ],
+    decisions:[
+      { text:'导调组通报：你的保障线被蓝军切断，弹药油料只能支撑六小时。',
+        options:[
+          { label:'抽调主攻兵力护线',     hint:'评价 −10%，风险 −8%', score:-0.10, risk:-0.08 },
+          { label:'启用备用保障方案',     hint:'需要 1 点预备队 · 评价 +6%', need:1, score:0.06 },
+          { label:'硬撑，继续进攻',       hint:'评价 +14%，风险 +15%', score:0.14, risk:0.15 }
+        ] }
+    ]
+  },
+  {
+    id:'tk_wargame', name:'战役兵棋推演', layer:'战役层', min:3, max:6, weight:12,
+    merit:2200, risk:0.05, attrs:['zhimou','tongshuai'], skill:'canmou', kind:'normal',
+    text:'沙盘之上，你只有一次出手机会。',
+    brief:'战区组织战役兵棋推演，你担任红方指挥员，对手是公认的推演高手。',
+    deploy:4,
+    fronts:[
+      { key:'main',    name:'情报判读', demand:3, kind:'score',  hint:'投入越多，判断越准' },
+      { key:'support', name:'兵力部署', demand:1, kind:'risk',   hint:'投入越多，漏洞越少' },
+      { key:'reserve', name:'后勤与预案', demand:1, kind:'option', hint:'投入越多，预案越充分' }
+    ],
+    decisions:[
+      { text:'推演到第三阶段，对手突然放弃正面，主力向你纵深穿插。',
+        options:[
+          { label:'回师防守，稳住阵脚',   hint:'评价 +4%，安全', score:0.04 },
+          { label:'将计就计，直取指挥部', hint:'评价 +16%，风险 +10%', score:0.16, risk:0.10 },
+          { label:'启用预案',             hint:'需要 1 点预备队 · 评价 +9%', need:1, score:0.09 }
+        ] }
+    ]
+  },
+  {
+    id:'tk_service', name:'军种建设调研', layer:'战略层', min:4, max:6, weight:13,
+    merit:3900, risk:0.04, attrs:['zhimou','meili'], skill:'dongyuan', kind:'normal',
+    text:'装备、训练、人才三条线，预算只够两条。',
+    brief:'你牵头一项军种建设专项调研，要向军委汇报未来五年的投入方向。',
+    deploy:4,
+    fronts:[
+      { key:'main',    name:'装备建设', demand:3, kind:'score',  hint:'投入越多，方案越有说服力' },
+      { key:'support', name:'训练体系', demand:1, kind:'risk',   hint:'投入越多，方案越扎实' },
+      { key:'reserve', name:'人才梯队', demand:1, kind:'option', hint:'投入越多，长远布局越完整' }
+    ],
+    decisions:[
+      { text:'汇报前一天，上级明确表示预算只够两条线。',
+        options:[
+          { label:'装备优先，快速形成战力', hint:'评价 +6%，专业能力 +4', score:0.06, fx:{ dv:{professional:4} } },
+          { label:'人才优先，着眼长远',     hint:'评价 +6%，培养接班人机会', score:0.06, fx:{ heir:1 } },
+          { label:'训练优先，夯实基础',     hint:'评价 +6%，威望 +4', score:0.06, fx:{ st:{prestige:4} } }
+        ] }
+    ]
+  },
+  {
+    id:'tk_reformtask', name:'训练改革试点', layer:'战略层', min:4, max:6, weight:12,
+    merit:4300, risk:0.08, attrs:['zhimou','tongshuai','yizhi'], skill:'tiaoling', kind:'normal',
+    flag:'reform',
+    text:'改革必然触动既有的训练秩序。',
+    brief:'你负责一项训练改革试点，方案已经报批，但阻力不小。',
+    deploy:4,
+    fronts:[
+      { key:'main',    name:'试点范围', demand:3, kind:'score',  hint:'投入越多，成果越突出' },
+      { key:'support', name:'配套保障', demand:1, kind:'risk',   hint:'投入越多，出问题的概率越低' },
+      { key:'reserve', name:'思想工作', demand:1, kind:'option', hint:'投入越多，越能化解阻力' }
+    ],
+    decisions:[
+      { text:'几位老同志联名反对方案，认为这是丢了传统。',
+        options:[
+          { label:'坚持推进，用结果说话', hint:'评价 +12%，风险 +10%', score:0.12, risk:0.10 },
+          { label:'缩小试点范围',         hint:'评价 +4%，安全', score:0.04 },
+          { label:'先做通思想工作',       hint:'需要 1 点预备队 · 评价 +8%，政治素养 +4', need:1, score:0.08, fx:{ dv:{political:4} } }
+        ] }
+    ]
+  },
+  /* ---------- 补充任务：补齐政治工作线与后期任务池 ----------
+     此前所有任务的关键技能都落在作战/指挥/保障三个分支上，
+     政治工作线拿不到任何任务加成；且第 5、6 阶段只剩保障分支的任务。
+     以下 4 个任务用于补齐路线覆盖与阶段覆盖。 */
+  {
+    id:'tk_units', name:'部队全面建设考核', layer:'战役层', min:3, max:6, weight:10,
+    merit:2900, risk:0.06, attrs:['tongshuai','meili'], skill:'daibing', kind:'normal',
+    text:'上级要对你的部队做全面建设考核，从训练到作风，一样不落。',
+    brief:'考核组进驻一周，涵盖训练、管理、作风、保障四个方面，全程不打招呼。',
+    deploy:4,
+    fronts:[
+      { key:'main',    name:'训练成绩', demand:3, kind:'score',  hint:'投入越多，总体评价越高' },
+      { key:'support', name:'作风纪律', demand:1, kind:'risk',   hint:'投入越多，出纰漏越少' },
+      { key:'reserve', name:'官兵面貌', demand:1, kind:'option', hint:'投入越多，临场应对越从容' }
+    ],
+    decisions:[
+      { text:'考核中，一名连长在战术课目上临场发挥失常。',
+        options:[
+          { label:'当场换人，保证成绩',   hint:'评价 +4%，士气 −', score:0.04, fx:{ st:{ morale:-4 } } },
+          { label:'让他继续，相信他',     hint:'评价 +10%，风险 +12%', score:0.10, risk:0.12 },
+          { label:'亲自下场带一遍',       hint:'需要 1 点预备队 · 评价 +8%', need:1, score:0.08 },
+          { label:'如实向考核组说明',     hint:'评价 −5%，作风纪律 +5', score:-0.05, disc:5 }
+        ] }
+    ]
+  },
+  {
+    id:'tk_masswork', name:'军民共建', layer:'分队层', min:2, max:5, weight:9,
+    merit:2400, risk:0.06, attrs:['meili','yizhi'], skill:'xuanchuan', kind:'normal',
+    text:'驻地村庄要修一条路，村里希望部队能搭把手。',
+    brief:'上级要求开展军民共建，你负责协调一次为期两周的援建任务。',
+    deploy:3,
+    fronts:[
+      { key:'main',    name:'援建力量', demand:2, kind:'score',  hint:'投入越多，工程推进越快' },
+      { key:'support', name:'群众沟通', demand:1, kind:'risk',   hint:'投入越多，摩擦与误解越少' },
+      { key:'reserve', name:'应急协调', demand:1, kind:'option', hint:'投入越多，遇到变故越有办法' }
+    ],
+    decisions:[
+      { text:'施工中发现一段路基需要专业设备，地方一时调不来。',
+        options:[
+          { label:'协调地方紧急调配',     hint:'评价 +8%', score:0.08 },
+          { label:'用部队装备顶上',       hint:'评价 +12%，风险 +8%', score:0.12, risk:0.08 },
+          { label:'调整方案绕开',         hint:'评价 +2%', score:0.02 },
+          { label:'向上级申请支援',       hint:'评价 +5%，作风纪律 +3', score:0.05, disc:3 }
+        ] }
+    ]
+  },
+  {
+    id:'tk_psywar', name:'战前动员', layer:'分队层', min:2, max:5, weight:10,
+    merit:2800, risk:0.05, attrs:['meili','zhimou'], skill:'xinli', kind:'normal',
+    text:'任务前夜，几名战士情绪不稳。',
+    brief:'明天就是实兵演习，你需要在出发前把队伍的状态调整到最好。',
+    deploy:3,
+    fronts:[
+      { key:'main',    name:'动员鼓动', demand:2, kind:'score',  hint:'投入越多，整体状态越好' },
+      { key:'support', name:'个别疏导', demand:1, kind:'risk',   hint:'投入越多，临阵出问题越少' },
+      { key:'reserve', name:'骨干发动', demand:1, kind:'option', hint:'投入越多，可用的办法越多' }
+    ],
+    decisions:[
+      { text:'一名老兵私下说，他觉得这次任务准备不足。',
+        options:[
+          { label:'公开回应他的疑虑',       hint:'评价 +10%，风险 +5%', score:0.10, risk:0.05 },
+          { label:'单独谈心，让他打头阵',   hint:'评价 +8%', score:0.08 },
+          { label:'让骨干去做工作',         hint:'需要 1 点预备队 · 评价 +6%', need:1, score:0.06 },
+          { label:'向上级反映，申请调整',   hint:'评价 −4%，作风纪律 +4', score:-0.04, disc:4 }
+        ] }
+    ]
+  },
+  {
+    id:'tk_polcheck', name:'基层政治工作检查', layer:'战役层', min:3, max:6, weight:9,
+    merit:3600, risk:0.05, attrs:['meili','zhimou'], skill:'zuzhijianshe', kind:'normal',
+    text:'上级要来检查基层政治工作，你负责的单位是重点。',
+    brief:'检查组三天后到，材料、台账、阵地建设都要过一遍。',
+    deploy:4,
+    fronts:[
+      { key:'main',    name:'台账与材料', demand:3, kind:'score',  hint:'投入越多，检查结果越好' },
+      { key:'support', name:'阵地建设', demand:1, kind:'risk',   hint:'投入越多，被挑毛病越少' },
+      { key:'reserve', name:'官兵访谈', demand:1, kind:'option', hint:'投入越多，应对问询越从容' }
+    ],
+    decisions:[
+      { text:'检查中发现一个连队的教育记录有缺失。',
+        options:[
+          { label:'如实上报，承认问题',     hint:'评价 −5%，作风纪律 +5', score:-0.05, disc:5 },
+          { label:'连夜补齐材料',           hint:'评价 +6%，风险 +10%', score:0.06, risk:0.10 },
+          { label:'用实际成效说话',         hint:'需要 1 点预备队 · 评价 +10%', need:1, score:0.10 },
+          { label:'先内部整改再上报',       hint:'评价 +3%，风险 +4%', score:0.03, risk:0.04 }
+        ] }
+    ]
+  }
+];
+
+
+/* ---------- 抉择事件 ---------- */
+const EVENTS = [
+  {
+    id:'ev_emergency', title:'紧急集合', min:0, max:1, weight:14, once:true,
+    text:'凌晨两点，哨声骤响。楼道里一片混乱，有人摸黑打背包，有人还在找鞋。',
+    options:[
+      { label:'第一个冲出宿舍', hint:'意志 +2 · 首长信任 +3 · 健康 −2',
+        fx:{ attr:{yizhi:2}, st:{trust:3, health:-2} } },
+      { label:'先叫醒身边两个新兵', hint:'士气 +3 · 搭档默契 +2',
+        fx:{ st:{morale:3, bond:2}, attr:{meili:1} },
+        hidden:{ chance:0.35, st:{trust:-2}, note:'你最后一个到，被点名批评' } },
+      { label:'整理好装具再出发', hint:'纪律 +3 · 首长信任 −1',
+        fx:{ dv:{discipline:3}, st:{trust:-1} } }
+    ]
+  },
+  {
+    id:'ev_comrade', title:'战友家里出事', min:0, max:3, weight:12, once:true,
+    text:'同班战友收到家里电报，父亲重病住院。他一个人蹲在营房后墙根抽烟，谁劝都不说话。',
+    options:[
+      { label:'把自己攒的津贴借给他', hint:'士气 +4 · 搭档默契 +4 · 家庭 −1',
+        fx:{ st:{morale:4, bond:4, family:-1} },
+        flag:'helped_comrade' },
+      { label:'报告指导员，走组织渠道', hint:'政治素养 +3 · 首长信任 +2',
+        fx:{ dv:{political:3}, st:{trust:2} } },
+      { label:'装作没看见', hint:'无变化，但有些东西会记下来',
+        fx:{}, hidden:{ chance:1, st:{morale:-3}, note:'此后班里再没人跟你说心里话' } }
+    ]
+  },
+  {
+    id:'ev_shoot_nervous', title:'考核前夜', min:0, max:1, weight:11, once:true,
+    text:'明天就是实弹考核。你在床上翻来覆去，手心全是汗。',
+    options:[
+      { label:'爬起来加练据枪', hint:'体魄 +2 · 军事素养 +3 · 健康 −2',
+        fx:{ attr:{tibo:2}, dv:{military:3}, st:{health:-2} } },
+      { label:'找班长聊了很久', hint:'士气 +3 · 首长信任 +2',
+        fx:{ st:{morale:3, trust:2} } },
+      { label:'强迫自己早睡', hint:'健康 +3 · 意志 +1',
+        fx:{ st:{health:3}, attr:{yizhi:1} } }
+    ]
+  },
+  {
+    id:'ev_promote_chance', title:'比武名额', min:1, max:2, weight:12, once:true,
+    text:'连里只有一个大比武名额，你和同年兵老周都够格。他家里负担重，很需要这次机会。',
+    options:[
+      { label:'凭实力争取，各凭本事', hint:'功勋 +250 · 同侪关系 −',
+        fx:{ merit:250, st:{morale:1} }, flag:'beat_peer' },
+      { label:'让给他，明年再来', hint:'搭档默契 +5 · 士气 +4 · 功勋 −80',
+        fx:{ merit:-80, st:{bond:5, morale:4} }, flag:'gave_up' },
+      { label:'提议加赛一场，输的人服气', hint:'军事素养 +4 · 威望 +3 · 功勋 +120',
+        fx:{ dv:{military:4}, st:{prestige:3}, merit:120 } }
+    ]
+  },
+  {
+    id:'ev_tough_area', title:'艰苦地区申请', min:2, max:4, weight:11, once:true,
+    text:'上级要抽调干部去高原边防代职两年。条件艰苦，但那里最缺人。',
+    options:[
+      { label:'主动报名', hint:'信念 +4 · 功勋 +600 · 健康 −8 · 家庭 −6',
+        fx:{ attr:{xinnian:4}, merit:600, st:{health:-8, family:-6} }, flag:'tough_area' },
+      { label:'服从组织安排', hint:'纪律 +3 · 首长信任 +3',
+        fx:{ dv:{discipline:3}, st:{trust:3} } },
+      { label:'以家庭困难为由申请留任', hint:'家庭 +4 · 首长信任 −4',
+        fx:{ st:{family:4, trust:-4} } }
+    ]
+  },
+  {
+    id:'ev_secondment', title:'机关借调', min:2, max:3, weight:11, once:true,
+    text:'军区机关想借调你去帮忙半年。去了能见世面，但连里的工作要交出去。',
+    options:[
+      { label:'去，机会难得', hint:'智谋 +4 · 专业能力 +5 · 威望 −2',
+        fx:{ attr:{zhimou:4}, dv:{professional:5}, st:{prestige:-2} }, flag:'staff_exp' },
+      { label:'留在一线，部队更需要我', hint:'统率 +3 · 威望 +3 · 功勋 +180',
+        fx:{ attr:{tongshuai:3}, st:{prestige:3}, merit:180 } }
+    ]
+  },
+  {
+    id:'ev_study_slot', title:'进修名额之争', min:3, max:4, weight:12, once:true,
+    text:'指挥院校的进修名额只有一个。你的同期老李各方面都不比你差，而且他明年就到龄了。',
+    options:[
+      { label:'争取，履历不能断', hint:'智谋 +5 · 技能点 +8 · 同侪关系 −',
+        fx:{ attr:{zhimou:5}, sp:8 }, flag:'took_slot' },
+      { label:'让给老李', hint:'搭档默契 +6 · 威望 +4 · 失去进修履历',
+        fx:{ st:{bond:6, prestige:4} }, flag:'gave_slot' },
+      { label:'向上级建议扩大名额', hint:'政治素养 +5 · 首长信任 +4',
+        fx:{ dv:{political:5}, st:{trust:4} }, hidden:{ chance:0.5, note:'建议未被采纳，两人都没去成', st:{trust:-3} } }
+    ]
+  },
+  {
+    id:'ev_partner_clash', title:'搭档分歧', min:2, max:4, weight:12, once:true,
+    text:'军事训练和政治教育的时间撞了。搭档坚持先上政治课，你认为训练不能停。',
+    options:[
+      { label:'坚持己见，训练优先', hint:'军事素养 +4 · 搭档默契 −5',
+        fx:{ dv:{military:4}, st:{bond:-5} } },
+      { label:'各退一步，调整计划', hint:'搭档默契 +5 · 政治素养 +3',
+        fx:{ st:{bond:5}, dv:{political:3} } },
+      { label:'请示上级裁定', hint:'纪律 +3 · 首长信任 +2 · 搭档默契 −2',
+        fx:{ dv:{discipline:3}, st:{trust:2, bond:-2} } }
+    ]
+  },
+  {
+    id:'ev_subordinate', title:'部属犯错', min:2, max:4, weight:12, once:true,
+    text:'你手下的排长在演习中擅自改变部署，结果打赢了，但违反了命令。上级要追责。',
+    options:[
+      { label:'替他承担责任', hint:'威望 +6 · 士气 +5 · 首长信任 −5',
+        fx:{ st:{prestige:6, morale:5, trust:-5} }, flag:'took_blame' },
+      { label:'如实上报，功过分明', hint:'纪律 +5 · 首长信任 +4 · 士气 −4',
+        fx:{ dv:{discipline:5}, st:{trust:4, morale:-4} } },
+      { label:'先内部批评，再为他请功', hint:'威望 +4 · 搭档默契 +3',
+        fx:{ st:{prestige:4, bond:3}, dv:{political:2} } }
+    ]
+  },
+  {
+    id:'ev_flood_order', title:'堤坝上的命令', min:2, max:5, weight:10, once:true,
+    text:'洪水还在涨。上级命令你部立即撤离，但堤后还有一个村子没转移完。',
+    options:[
+      { label:'服从命令，立即撤离', hint:'纪律 +6 · 首长信任 +5 · 信念 −4',
+        fx:{ dv:{discipline:6}, st:{trust:5}, attr:{xinnian:-4} }, flag:'obeyed_retreat' },
+      { label:'先救人，责任我来担', hint:'信念 +6 · 威望 +8 · 纪律 −5 · 负伤风险',
+        fx:{ attr:{xinnian:6}, st:{prestige:8}, dv:{discipline:-5} }, flag:'saved_village', risky:true },
+      { label:'分兵两路，主力撤离', hint:'统率 +4 · 军事素养 +4 · 部分损失',
+        fx:{ attr:{tongshuai:4}, dv:{military:4}, st:{morale:-2} } }
+    ]
+  },
+  {
+    id:'ev_family_conflict', title:'两地分居', min:2, max:5, weight:11, once:true,
+    text:'爱人带着孩子来看你，只待了三天就要走。孩子已经不太认识你了。',
+    options:[
+      { label:'申请家属随军', hint:'家庭 +8 · 首长信任 −3 · 威望 −2',
+        fx:{ st:{family:8, trust:-3, prestige:-2} }, flag:'family_joined' },
+      { label:'把精力全放在部队上', hint:'统率 +3 · 功勋 +200 · 家庭 −8',
+        fx:{ attr:{tongshuai:3}, merit:200, st:{family:-8} } },
+      { label:'调整节奏，每月固定回家', hint:'家庭 +5 · 士气 +3 · 功勋 −80',
+        fx:{ st:{family:5, morale:3}, merit:-80 } }
+    ]
+  },
+  {
+    id:'ev_equipment', title:'装备故障', min:3, max:5, weight:11, once:true,
+    text:'演习前夜，主战装备出现故障。上报就意味着退出演习，自己修则有风险。',
+    options:[
+      { label:'如实上报，申请退出', hint:'纪律 +5 · 首长信任 +3 · 功勋 −300',
+        fx:{ dv:{discipline:5}, st:{trust:3}, merit:-300 } },
+      { label:'连夜抢修，赌一把', hint:'专业能力 +6 · 功勋 +400 · 有失败风险',
+        fx:{ dv:{professional:6}, merit:400 },
+        hidden:{ chance:0.3, note:'抢修失败，演习中装备再次趴窝', merit:-500, st:{trust:-6} } },
+      { label:'启用备份方案', hint:'智谋 +4 · 参谋业务经验 · 功勋 +150',
+        fx:{ attr:{zhimou:4}, merit:150 } }
+    ]
+  },
+  {
+    id:'ev_merit_dispute', title:'立功名额', min:3, max:5, weight:11, once:true,
+    text:'这次任务立了集体功，但个人记功名额只有一个。你的副手做了最多的工作。',
+    options:[
+      { label:'把名额让给副手', hint:'威望 +8 · 士气 +6 · 功勋 −400',
+        fx:{ st:{prestige:8, morale:6}, merit:-400 }, flag:'gave_merit' },
+      { label:'按实绩上报自己', hint:'功勋 +900 · 士气 −3',
+        fx:{ merit:900, st:{morale:-3} } },
+      { label:'向上级争取两个名额', hint:'政治素养 +5 · 首长信任 +3',
+        fx:{ dv:{political:5}, st:{trust:3} },
+        hidden:{ chance:0.45, note:'上级驳回了你的请求', st:{trust:-2} } }
+    ]
+  },
+  {
+    id:'ev_reform_clash', title:'改革的分歧', min:4, max:6, weight:12, once:true,
+    text:'你主推的训练改革方案，遭到几位老同志的强烈反对。他们认为这是丢了传统。',
+    options:[
+      { label:'坚持推进，用结果说话', hint:'功勋 +800 · 威望 −4 · 专业能力 +6',
+        fx:{ merit:800, st:{prestige:-4}, dv:{professional:6} }, flag:'reform' },
+      { label:'小范围试点，逐步推开', hint:'专业能力 +4 · 首长信任 +4 · 功勋 +400',
+        fx:{ dv:{professional:4}, st:{trust:4}, merit:400 } },
+      { label:'暂时搁置，维持现状', hint:'纪律 +3 · 士气 +2 · 功勋 −200',
+        fx:{ dv:{discipline:3}, st:{morale:2}, merit:-200 } }
+    ]
+  },
+  {
+    id:'ev_old_chief', title:'老首长退休', min:3, max:5, weight:10, once:true,
+    text:'一手把你带起来的老首长要退休了。临走前他问你，以后打算怎么走。',
+    options:[
+      { label:'请他指点未来的路', hint:'智谋 +4 · 首长信任 +6',
+        fx:{ attr:{zhimou:4}, st:{trust:6} } },
+      { label:'请他为你的下一步说话', hint:'首长信任 +8 · 威望 −3',
+        fx:{ st:{trust:8, prestige:-3} }, flag:'asked_favor' },
+      { label:'只谈感情，不提要求', hint:'信念 +4 · 威望 +4',
+        fx:{ attr:{xinnian:4}, st:{prestige:4} } }
+    ]
+  },
+  {
+    id:'ev_heir', title:'子女的选择', min:5, max:6, weight:14, once:true,
+    text:'孩子高考填志愿，报了军校。你盯着那张志愿表看了很久。',
+    options:[
+      { label:'支持他，把路指给他', hint:'传承标记 +1 · 家庭 +6 · 信念 +3',
+        fx:{ st:{family:6}, attr:{xinnian:3} }, flag:'heir' },
+      { label:'劝他选一条更轻松的路', hint:'家庭 +3 · 信念 −3',
+        fx:{ st:{family:3}, attr:{xinnian:-3} } },
+      { label:'让他自己决定', hint:'家庭 +4 · 威望 +2',
+        fx:{ st:{family:4, prestige:2} } }
+    ]
+  },
+  {
+    id:'ev_retire_offer', title:'最后的选择', min:5, max:6, weight:12, once:true,
+    text:'上级征求你的意见：是继续留任，还是提前退下来，把位置让给年轻人。',
+    options:[
+      { label:'继续留任，再干几年', hint:'功勋 +600 · 健康 −5',
+        fx:{ merit:600, st:{health:-5} } },
+      { label:'退下来，专心培养接班人', hint:'威望 +5 · 传承标记 +1',
+        fx:{ st:{prestige:5}, heir:1 } },
+      { label:'退下来，回归家庭', hint:'家庭 +10 · 士气 +5 · 功勋 −200',
+        fx:{ st:{family:10, morale:5}, merit:-200 } }
+    ]
+  },
+  {
+    id:'ev_veteran_care', title:'老兵的心事', min:1, max:4, weight:11, once:true,
+    text:'班里有个老兵，服役十几年了，最近总是心不在焉。听说他家里孩子上学遇到了难处。',
+    options:[
+      { label:'帮他跑一趟地方部门', hint:'军地协调经验 · 士气 +5 · 威望 +3',
+        fx:{ dv:{professional:3}, st:{morale:5, prestige:3} } },
+      { label:'找组织反映，走正规渠道', hint:'政治素养 +4 · 纪律 +2',
+        fx:{ dv:{political:4, discipline:2} } },
+      { label:'先谈一次心，了解实情', hint:'魅力 +3 · 搭档默契 +3',
+        fx:{ attr:{meili:3}, st:{bond:3} } }
+    ]
+  },
+  {
+    id:'ev_integrity', title:'一份礼物', min:2, max:5, weight:10, once:true,
+    text:'一位受过你帮助的地方企业家送来一份厚礼，说是"一点心意"。',
+    options:[
+      { label:'当场退回，并说明纪律', hint:'纪律 +8 · 威望 +4 · 首长信任 +3',
+        fx:{ dv:{discipline:8}, st:{prestige:4, trust:3} }, flag:'clean' },
+      { label:'上交组织处理', hint:'纪律 +5 · 政治素养 +4',
+        fx:{ dv:{discipline:5, political:4} } },
+      { label:'收下，人情往来而已', hint:'（高风险）纪律 −15',
+        fx:{ dv:{discipline:-15} }, flag:'gift', risky:true }
+    ]
+  }
+];
+
+/* ---------- 补充抉择事件（提高中后期的事件密度） ---------- */
+[
+  { id:'ev_inspect_war', title:'战备突击检查', min:4, max:6, weight:13, once:true,
+    text:'上级不打招呼，直接拉响了战备等级转换的警报。',
+    options:[
+      { label:'按预案全速展开，先到位再说', hint:'功勋 +800 · 纪律 +3',
+        fx:{ merit:800, dv:{ discipline:3 } } },
+      { label:'先核对清单，确保不出错',     hint:'纪律 +5 · 功勋 +300',
+        fx:{ dv:{ discipline:5 }, merit:300 } },
+      { label:'亲自到一线盯着',             hint:'威望 +4 · 健康 −3 · 功勋 +500',
+        fx:{ st:{ prestige:4, health:-3 }, merit:500 } }
+    ] },
+  { id:'ev_new_equipment', title:'新装备列装', min:3, max:5, weight:12, once:true,
+    text:'新装备列装到位，但一批老骨干对着一堆屏幕手足无措。',
+    options:[
+      { label:'强推新装备，旧装备封存',     hint:'专业能力 +6 · 士气 −5',
+        fx:{ dv:{ professional:6 }, st:{ morale:-5 } } },
+      { label:'新旧并行，逐步过渡',         hint:'专业能力 +3 · 士气 +3',
+        fx:{ dv:{ professional:3 }, st:{ morale:3 } } },
+      { label:'让年轻骨干带教老同志',       hint:'威望 +4 · 士气 +4 · 政治素养 +3',
+        fx:{ st:{ prestige:4, morale:4 }, dv:{ political:3 } } }
+    ] },
+  { id:'ev_subordinate_leave', title:'部属想调走', min:3, max:5, weight:11, once:true,
+    text:'你一手带出来的参谋提出，想调到别的单位去。',
+    options:[
+      { label:'放人，好聚好散',             hint:'威望 +4 · 政治素养 +3',
+        fx:{ st:{ prestige:4 }, dv:{ political:3 } } },
+      { label:'挽留，给他更合适的岗位',     hint:'威望 +2 · 搭档默契 +4',
+        fx:{ st:{ prestige:2, bond:4 } } },
+      { label:'不放，压他一年',             hint:'威望 −3 · 士气 −4',
+        fx:{ st:{ prestige:-3, morale:-4 } } }
+    ] },
+  { id:'ev_media_doubt', title:'舆论的质疑', min:4, max:6, weight:12, once:true,
+    text:'你推的那套做法，被一家媒体写成了"标新立异、不守规矩"。',
+    options:[
+      { label:'公开回应，用数据说话',       hint:'威望 +5 · 专业能力 +3 · 有风险',
+        fx:{ st:{ prestige:5 }, dv:{ professional:3 } },
+        hidden:{ chance:0.3, note:'回应被断章取义，争议更大了', st:{ trust:-5 } } },
+      { label:'不回应，埋头做事',           hint:'威望 +1 · 纪律 +3',
+        fx:{ st:{ prestige:1 }, dv:{ discipline:3 } } },
+      { label:'向上级说明情况',             hint:'首长信任 +5',
+        fx:{ st:{ trust:5 } } }
+    ] },
+  { id:'ev_old_comrade', title:'老战友的请托', min:2, max:5, weight:11, once:true,
+    text:'转业多年的老战友找上门，想让你帮个"小忙"。',
+    options:[
+      { label:'在规矩内尽力帮',             hint:'士气 +3 · 纪律 +2',
+        fx:{ st:{ morale:3 }, dv:{ discipline:2 } } },
+      { label:'明确拒绝，把话说清楚',       hint:'纪律 +5 · 士气 −2',
+        fx:{ dv:{ discipline:5 }, st:{ morale:-2 } } },
+      { label:'破例通融一次',               hint:'（高风险）纪律 −8 · 士气 +2',
+        fx:{ dv:{ discipline:-8 }, st:{ morale:2 } }, risky:true }
+    ] },
+  { id:'ev_health_check', title:'体检报告', min:3, max:6, weight:12, once:true,
+    text:'体检报告出来了，医生建议你减少高强度工作。',
+    options:[
+      { label:'听医生的，调整节奏',         hint:'健康 +10 · 功勋 −200',
+        fx:{ st:{ health:10 }, merit:-200 } },
+      { label:'该干嘛干嘛',                 hint:'健康 −6 · 功勋 +400',
+        fx:{ st:{ health:-6 }, merit:400 } },
+      { label:'加强锻炼，自己调理',         hint:'体魄 +3 · 健康 +4',
+        fx:{ attr:{ tibo:3 }, st:{ health:4 } } }
+    ] },
+  { id:'ev_quota', title:'名额之争', min:3, max:5, weight:12, once:true,
+    text:'这一批晋升名额比往年少了一个，你和老搭档只能上一个。',
+    options:[
+      { label:'让给搭档',                   hint:'搭档默契 +8 · 威望 +4',
+        fx:{ st:{ bond:8, prestige:4 } } },
+      { label:'据理力争',                   hint:'首长信任 +4 · 搭档默契 −5',
+        fx:{ st:{ trust:4, bond:-5 } } },
+      { label:'联名向上级反映',             hint:'政治素养 +4 · 有风险',
+        fx:{ dv:{ political:4 } },
+        hidden:{ chance:0.35, note:'上级认为你们在争名夺利', st:{ trust:-5 } } }
+    ] },
+  { id:'ev_child_school', title:'孩子上学', min:2, max:4, weight:11, once:true,
+    text:'孩子到了上学的年纪，爱人一个人实在忙不过来。',
+    options:[
+      { label:'把老人接来帮忙',             hint:'家庭 +6 · 士气 +3',
+        fx:{ st:{ family:6, morale:3 } } },
+      { label:'申请调到离家近的单位',       hint:'家庭 +8 · 首长信任 −4',
+        fx:{ st:{ family:8, trust:-4 } } },
+      { label:'让爱人再辛苦几年',           hint:'家庭 −6 · 功勋 +250',
+        fx:{ st:{ family:-6 }, merit:250 } }
+    ] },
+  { id:'ev_joint_foreign', title:'联演场上的质疑', min:4, max:5, weight:11, once:true,
+    text:'联合演练中，外军指挥员对你的方案提出了公开质疑。',
+    options:[
+      { label:'当场用推演结果回应',         hint:'威望 +6 · 专业能力 +4',
+        fx:{ st:{ prestige:6 }, dv:{ professional:4 } } },
+      { label:'会后私下沟通',               hint:'首长信任 +4 · 专业能力 +3',
+        fx:{ st:{ trust:4 }, dv:{ professional:3 } } },
+      { label:'接受建议，调整方案',         hint:'军事素养 +5 · 威望 −2',
+        fx:{ dv:{ military:5 }, st:{ prestige:-2 } } }
+    ] },
+  { id:'ev_mentor_issue', title:'培养对象出问题', min:4, max:6, weight:11, once:true,
+    text:'你重点培养的那名年轻干部，被人举报了。',
+    options:[
+      { label:'先查清楚再表态',             hint:'政治素养 +5 · 纪律 +3',
+        fx:{ dv:{ political:5, discipline:3 } } },
+      { label:'相信他，公开支持',           hint:'威望 +4 · 有风险',
+        fx:{ st:{ prestige:4 } },
+        hidden:{ chance:0.4, note:'事情被查实，你也受了牵连', st:{ trust:-6 }, dv:{ discipline:-4 } } },
+      { label:'划清界限，交给组织处理',     hint:'纪律 +5 · 威望 −3',
+        fx:{ dv:{ discipline:5 }, st:{ prestige:-3 } } }
+    ] },
+  { id:'ev_typical', title:'被树为典型', min:2, max:5, weight:10, once:true,
+    text:'上级要把你树为先进典型，安排你到处作报告。',
+    options:[
+      { label:'接受，认真准备',             hint:'威望 +5 · 健康 −3',
+        fx:{ st:{ prestige:5, health:-3 } } },
+      { label:'推辞，把机会让给一线官兵',   hint:'士气 +5 · 威望 +3',
+        fx:{ st:{ morale:5, prestige:3 } } },
+      { label:'接受，但坚持不讲空话',       hint:'政治素养 +4 · 威望 +4',
+        fx:{ dv:{ political:4 }, st:{ prestige:4 } } }
+    ] },
+  { id:'ev_back_unit', title:'回老连队', min:6, max:6, weight:14, once:true,
+    text:'退役前，你回了一趟当年当兵的老连队。营房翻新了，但门口那棵树还在。',
+    options:[
+      { label:'给新兵讲一堂课',             hint:'士气 +6 · 信念 +3',
+        fx:{ st:{ morale:6 }, attr:{ xinnian:3 } } },
+      { label:'默默看一圈就走',             hint:'信念 +5 · 家庭 +3',
+        fx:{ attr:{ xinnian:5 }, st:{ family:3 } } },
+      { label:'给连队留点东西',             hint:'威望 +4 · 家庭 +2',
+        fx:{ st:{ prestige:4, family:2 } } }
+    ] },
+  { id:'ev_retire_plan', title:'退役安置', min:6, max:6, weight:14, once:true,
+    text:'组织征求你对退役安置的意见。',
+    options:[
+      { label:'服从组织安排',               hint:'纪律 +5 · 威望 +3',
+        fx:{ dv:{ discipline:5 }, st:{ prestige:3 } } },
+      { label:'申请到院校任教',             hint:'专业能力 +4 · 政治素养 +3',
+        fx:{ dv:{ professional:4, political:3 } } },
+      { label:'回地方工作',                 hint:'家庭 +6 · 士气 +2',
+        fx:{ st:{ family:6, morale:2 } } }
+    ] }
+].forEach(e => EVENTS.push(e));
+
+/* ---------- 结局 ----------
+   判定顺序即优先级：先命中先结算，因此越特殊、越稀有的结局排在越前面。 */
+const ENDINGS = [
+  { id:'e_grand', tier:'legend', name:'大元帅',
+    cond: s => s.rankIdx >= 19,
+    text:'这个军衔，人民军队的历史上设而未授。它不属于任何一场胜仗，而是属于一整套东西——你带出来的部队、你推行的制度、你培养的人。授衔那天没有人欢呼，只有很长的沉默。' },
+  { id:'e_marshal_top', tier:'legend', name:'将星璀璨',
+    cond: s => s.rankIdx >= 18 && s.dv.discipline >= 88 && s.st.prestige >= 80,
+    text:'你从列兵一路走到上将。阅兵式上，你站在观礼台最前排，肩上的三颗星在阳光下泛着光。没有人记得你当年在新兵连打背包慢了半拍，但你自己记得。' },
+  { id:'e_cmd_marshal', tier:'legend', name:'铁血战将',
+    cond: s => s.rankIdx >= 18 && s.route === 'command',
+    text:'你这一辈子，最踏实的时刻是在指挥所里。地图摊开，红蓝铅笔一划，几万人就动起来了。有人说你只懂打仗，你笑笑：能把仗打好，已经不容易了。' },
+  { id:'e_pol_marshal', tier:'legend', name:'铸魂育人',
+    cond: s => s.rankIdx >= 18 && s.route === 'political',
+    text:'你没带过多少兵，但很多带兵的人是你带出来的。你常说，枪可以换，人不能散。几十年过去，那些被你谈过话的年轻人，如今都站在了重要的位置上。' },
+  { id:'e_stf_marshal', tier:'legend', name:'谋定全局',
+    cond: s => s.rankIdx >= 18 && s.route === 'staff',
+    text:'别人看到的是战场上的胜负，你看到的是后面的油料、弹药、维修和运力。你一辈子都在算这些没人看得见的东西，而正是它们，让前面的人敢打。' },
+  { id:'e_legacy', tier:'legend', name:'薪火相传',
+    cond: s => s.rankIdx >= 18 && (s.heir || 0) >= 3 && s.st.prestige >= 78,
+    text:'你把最好的年华留在了部队，又把一批又一批年轻人送上了带兵的位置。军装换了一代又一代，有些东西没变。' },
+  { id:'e_reform', tier:'legend', name:'强军先锋',
+    cond: s => s.rankIdx >= 18 && s.flags.reform && s.dv.professional >= 93,
+    text:'你推的那套训练路子，起初挨了不少骂。多年以后，它成了新的条令。' },
+  { id:'e_marshal', tier:'legend', name:'执掌一方',
+    cond: s => s.rankIdx >= 18,
+    text:'你走到了军旅生涯的顶点。回望五十年，你亲手带出来的部队，如今已经换了三茬人。' },
+  { id:'e_general', tier:'gold', name:'肩扛金星',
+    cond: s => s.rankIdx >= 16,
+    text:'将星加身的那天，你在镜子前站了很久。这一路没有侥幸，每一步都是自己走出来的。' },
+  { id:'e_peace', tier:'gold', name:'蓝盔荣光',
+    cond: s => s.flags.peace && s.rankIdx >= 11,
+    text:'那片遥远的土地上，你戴过蓝盔。多年以后还有人记得，有一支中国军人在那里守过和平。' },
+  { id:'e_rescue', tier:'gold', name:'人民至上',
+    cond: s => s.flags.rescue || s.flags.saved_village,
+    text:'堤坝上、废墟里、风雪中，你都去过。你说不出什么大道理，但你站在了该站的地方。' },
+  { id:'e_discipline', tier:'warn', name:'失守的防线',
+    cond: s => s.dv.discipline < 62 || s.flags.gift,
+    text:'你走过很长的路，却在最后丢掉了最重要的东西。军装还在，但有些分量已经轻了。' },
+  { id:'e_tough', tier:'plain', name:'边关冷月',
+    cond: s => s.flags.tough_area,
+    text:'你把最好的那些年留在了高原。那里风大、氧气少，但星空比哪里都亮。' },
+  { id:'e_silent', tier:'plain', name:'默默奉献',
+    cond: s => s.rankIdx <= 15 && s.st.prestige >= 55,
+    text:'你没有走到很高的位置，但你带过的兵都记得你。有些功劳不写在档案里。' },
+  { id:'e_plain', tier:'plain', name:'光荣退役',
+    cond: () => true,
+    text:'军装叠好，放进箱底。五十年，从新兵连到最后一班岗，你把该做的都做了。' }
+];
+
+/* ---------- 机会卡池 ----------
+   每回合随机抽 3 张作为额外可选行动，各有独特收益与代价，
+   让每一回合的选项都不一样。 */
+const OPPORTUNITIES = [
+  { id:'op_mentor',    name:'首长点将',     ap:1, min:0, cat:'机会', merit:200,
+    desc:'首长点名让你随队执行一次重要任务 · 功勋 +200 · 首长信任 +4',
+    fx:{ merit:200, st:{ trust:4 } } },
+  { id:'op_help',      name:'替战友顶班',   ap:1, min:0, cat:'机会',
+    desc:'替生病的战友值了一周班 · 士气 +5 · 搭档默契 +4',
+    fx:{ st:{ morale:5, bond:4 } } },
+  { id:'op_letter',    name:'一封家书',     ap:1, min:0, cat:'机会',
+    desc:'收到家里的信，说一切都好 · 家庭 +5 · 信念 +2',
+    fx:{ st:{ family:5 }, attr:{ xinnian:2 } } },
+  { id:'op_bulletin',  name:'连队板报',     ap:1, min:0, cat:'机会',
+    desc:'你办的板报被旅里评为优秀 · 威望 +2 · 政治素养 +3',
+    fx:{ st:{ prestige:2 }, dv:{ political:3 } } },
+  { id:'op_sports',    name:'军体运动会',   ap:2, min:0, cat:'机会',
+    desc:'代表单位参加军体运动会 · 体魄 +3 · 威望 +3 · 功勋 +150',
+    fx:{ attr:{ tibo:3 }, st:{ prestige:3 }, merit:150 } },
+  { id:'op_draft',     name:'代写材料',     ap:1, min:1, cat:'机会',
+    desc:'帮机关连夜赶材料 · 专业能力 +3 · 首长信任 +3 · 健康 −2',
+    fx:{ dv:{ professional:3 }, st:{ trust:3, health:-2 } } },
+  { id:'op_overtime',  name:'通宵加班',     ap:2, min:1, cat:'机会',
+    desc:'连续一周加班整理台账 · 首长信任 +6 · 健康 −5',
+    fx:{ st:{ trust:6, health:-5 } } },
+  { id:'op_visit',     name:'慰问演出',     ap:1, min:1, cat:'机会',
+    desc:'组织官兵观看慰问演出 · 士气 +7 · 魅力 +2',
+    fx:{ st:{ morale:7 }, attr:{ meili:2 } } },
+  { id:'op_training',  name:'参加集训班',   ap:2, min:1, cat:'机会',
+    desc:'为期一月的骨干集训 · 技能点 +3 · 智谋 +2 · 健康 −2',
+    fx:{ sp:3, attr:{ zhimou:2 }, st:{ health:-2 } } },
+  { id:'op_recon',     name:'侦察骨干集训', ap:2, min:2, cat:'机会',
+    desc:'参加侦察骨干集训 · 军事素养 +4 · 技能点 +2 · 健康 −3',
+    fx:{ dv:{ military:4 }, sp:2, st:{ health:-3 } } },
+  { id:'op_lecture',   name:'讲一堂战例课', ap:1, min:2, cat:'机会',
+    desc:'给全营讲一堂战例课 · 智谋 +2 · 威望 +4',
+    fx:{ attr:{ zhimou:2 }, st:{ prestige:4 } } },
+  { id:'op_inspect',   name:'迎接上级检查', ap:2, min:2, cat:'机会',
+    desc:'你负责汇报，检查结果优秀 · 纪律 +3 · 首长信任 +5',
+    fx:{ dv:{ discipline:3 }, st:{ trust:5 } } },
+  { id:'op_paper',     name:'撰写军事论文', ap:2, min:3, cat:'机会', merit:350,
+    desc:'在军事刊物发表文章 · 智谋 +3 · 威望 +4 · 功勋 +350',
+    fx:{ attr:{ zhimou:3 }, st:{ prestige:4 }, merit:350 } },
+  { id:'op_joint',     name:'跨单位交流',   ap:2, min:3, cat:'机会',
+    desc:'与兄弟单位交流经验 · 专业能力 +4 · 搭档默契 +3',
+    fx:{ dv:{ professional:4 }, st:{ bond:3 } } },
+  { id:'op_press',     name:'接受采访',     ap:1, min:3, cat:'机会',
+    desc:'军报来队采访，你上了头版 · 威望 +6，但可能招来议论',
+    fx:{ st:{ prestige:6 } }, hidden:{ chance:0.3, note:'报道引来了一些非议', st:{ trust:-5 } } },
+  { id:'op_foreign',   name:'外军交流',     ap:3, min:4, cat:'机会', merit:700,
+    desc:'与外军代表团交流 · 专业能力 +5 · 军事素养 +3 · 功勋 +700',
+    fx:{ dv:{ professional:5, military:3 }, merit:700 } },
+  { id:'op_pilot',     name:'承担试点任务', ap:3, min:4, cat:'机会', merit:1000,
+    desc:'主动承担一项训练改革试点 · 功勋 +1000 · 专业能力 +4',
+    fx:{ merit:1000, dv:{ professional:4 } }, flag:'reform' },
+  { id:'op_talent',    name:'发现好苗子',   ap:2, min:4, cat:'机会',
+    desc:'看中一名年轻干部，重点培养 · 威望 +3 · 政治素养 +3',
+    fx:{ st:{ prestige:3 }, dv:{ political:3 }, heir:1 } },
+  { id:'op_strategy',  name:'战略研讨班',   ap:3, min:5, cat:'机会', merit:900,
+    desc:'参加高级战略研讨 · 智谋 +4 · 专业能力 +4 · 功勋 +900',
+    fx:{ attr:{ zhimou:4 }, dv:{ professional:4 }, merit:900 } },
+  { id:'op_oldunit',   name:'回老部队看看', ap:2, min:5, cat:'机会',
+    desc:'回当年带过的连队走了走 · 士气 +8 · 信念 +3 · 家庭 +2',
+    fx:{ st:{ morale:8, family:2 }, attr:{ xinnian:3 } } }
+];
+
+/* ---------- 同期军官 ---------- */
+const RIVAL_NAMES = [
+  '周建国','李卫东','孙志强','陈立新','王振华','刘铁军','赵明远','杨海涛',
+  '黄志刚','吴晓峰','徐国栋','郑云飞','马长胜','林向阳','高建军','谢文斌',
+  '何守成','罗大鹏','秦立国','曹永强'
+];
+const RIVAL_TAGS = ['稳健','拼劲足','实干','善交际','老成','肯钻研','敢闯','细致'];
+
+/* 同期军官每回合的基准功勋收益（按阶段递增） */
+const RIVAL_GAIN = {
+  recruit: 90, nco: 350, officer: 950, field: 1900,
+  general: 2800, marshal: 2250, legacy: 750
+};
+
+/* ---------- 军衔肩章（用星数与样式表示） ---------- */
+const RANK_INSIGNIA = [
+  { stars:0, style:'chevr' },  // 列兵
+  { stars:1, style:'chevr' },  // 上等兵
+  { stars:1, style:'bar' },    // 下士
+  { stars:2, style:'bar' },    // 中士
+  { stars:3, style:'bar' },    // 上士
+  { stars:1, style:'bar4' },   // 四级军士长
+  { stars:2, style:'bar4' },   // 三级军士长
+  { stars:3, style:'bar4' },   // 二级军士长
+  { stars:4, style:'bar4' },   // 一级军士长
+  { stars:1, style:'star' },   // 少尉
+  { stars:2, style:'star' },   // 中尉
+  { stars:3, style:'star' },   // 上尉
+  { stars:1, style:'star2' },  // 少校
+  { stars:2, style:'star2' },  // 中校
+  { stars:3, style:'star2' },  // 上校
+  { stars:4, style:'star2' },  // 大校
+  { stars:1, style:'gold' },   // 少将
+  { stars:2, style:'gold' },   // 中将
+  { stars:3, style:'gold' },   // 上将
+  { stars:1, style:'grand' }   // 大元帅
+];
+
+/* ============================================================
+   以下为扩展系统：入伍方式 / 技能 S 级指令 / 成就 / 家训 / 二周目事件
+   ============================================================ */
+
+/* ---------- 入伍方式 ----------
+   不同的入伍路径带来不同的起点与先天条件，是重玩价值的第一层。 */
+const ENLIST_TYPES = {
+  conscript: {
+    key:'conscript', name:'义务兵', short:'义务兵',
+    desc:'最常规的入伍方式。属性分配均衡，没有短板也没有特长。',
+    alloc: 30, sp: 0, startRank: 0, mods:{}
+  },
+  nco: {
+    key:'nco', name:'直招军士', short:'直招军士',
+    desc:'凭专业技能直接入伍。起点是下士，可分配点数少 4 点。',
+    alloc: 26, sp: 18, startRank: 2, mods:{ zhimou:4 }
+  },
+  college: {
+    key:'college', name:'大学生士兵', short:'大学生',
+    desc:'文化底子好，体能偏弱。智谋 +8、信念 +4，但体魄 −6。',
+    alloc: 30, sp: 10, startRank: 0, mods:{ zhimou:8, xinnian:4, tibo:-6 }
+  },
+  officer: {
+    key:'officer', name:'生长军官', short:'生长军官',
+    desc:'军校毕业，可分配点数最多，但欠基层经历——尉官期晋升门槛高 20%。',
+    alloc: 34, sp: 0, startRank: 0,
+    mods:{ military:-12 }, flags:{ no_grassroots:true }, needMul:1.2
+  }
+};
+
+/* ---------- 技能 S 级解锁的高级指令 ----------
+   技能不再只是数值加成，练到 S 级会解锁改变玩法的高级指令。 */
+const SKILL_SKILLS = {
+  sheji:    { name:'精准射击',     desc:'单兵层任务评价 +12%' },
+  zhencha:  { name:'情报判读',     desc:'任务评价 +10%，但风险 +3%' },
+  zuzhi:    { name:'组织指挥',     desc:'全部任务风险 −6%' },
+  lianhe:   { name:'联合作战指挥', desc:'战役层任务部署点 +1' },
+  canmou:   { name:'战役推演',     desc:'任务评价结算 +8%' },
+  houqin:   { name:'战时保障',     desc:'战略层任务部署点 +1' },
+  tiaoling: { name:'条令权威',     desc:'作风纪律的自然衰减减半' },
+  sixiang:  { name:'政治动员',     desc:'任务失利时的士气损失减半' },
+  dongyuan: { name:'全面动员',     desc:'战略层任务评价 +10%' },
+  daibing:  { name:'带兵育人',     desc:'任务评价 +6%，部属成长更快' }
+};
+function hasS(s, key) { return !!(s && s.skills && (s.skills[key] || 0) >= 6); }
+
+/* ---------- 成就（跨周目累积） ---------- */
+const ACHIEVEMENTS = [
+  /* 军衔 */
+  { id:'rank_general', name:'肩扛金星',   desc:'晋升至少将',              cond:s => s.rankIdx >= 16 },
+  { id:'rank_marshal', name:'执掌一方',   desc:'晋升至上将',              cond:s => s.rankIdx >= 18 },
+  { id:'rank_grand',   name:'设而未授',   desc:'晋升至大元帅',            cond:s => s.rankIdx >= 19 },
+  { id:'rank_nco',     name:'老兵',       desc:'以军士身份走完全程',      cond:s => s.rankIdx <= 8 && s.serviceYear >= 30 },
+  { id:'rank_low',     name:'原地踏步',   desc:'服役满 20 年仍是列兵',    cond:s => s.rankIdx === 0 && s.serviceYear >= 20 },
+  /* 路线 */
+  { id:'route_cmd',    name:'铁血战将',   desc:'走完军事指挥线',          cond:s => s.route === 'command' },
+  { id:'route_pol',    name:'铸魂育人',   desc:'走完政治工作线',          cond:s => s.route === 'political' },
+  { id:'route_stf',    name:'谋定全局',   desc:'走完参谋后装线',          cond:s => s.route === 'staff' },
+  { id:'route_switch', name:'半路改行',   desc:'中途转线一次',            cond:s => s.routeSwitched },
+  /* 任务 */
+  { id:'task_s',       name:'名将之风',   desc:'在任务中取得 S 级评价',   cond:s => (s.flags.achS || 0) >= 1 },
+  { id:'task_s10',     name:'常胜',       desc:'累计取得 10 次 S 级评价', cond:s => (s.flags.achS || 0) >= 10 },
+  { id:'task_d',       name:'败仗',       desc:'在任务中取得 D 级评价',   cond:s => (s.flags.achD || 0) >= 1 },
+  /* 重大功勋与抉择 */
+  { id:'deed_all',     name:'功勋等身',   desc:'集齐五种重大功勋',        cond:s => greatDeeds(s) >= 5 },
+  { id:'peace',        name:'蓝盔',       desc:'参加国际维和',            cond:s => s.flags.peace },
+  { id:'rescue',       name:'人民至上',   desc:'参加抗洪抢险',            cond:s => s.flags.rescue },
+  { id:'tough',        name:'边关冷月',   desc:'主动申请艰苦地区',        cond:s => s.flags.tough_area },
+  { id:'clean',        name:'两袖清风',   desc:'当面退回不该收的东西',    cond:s => s.flags.clean },
+  { id:'gift',         name:'一念之差',   desc:'收下不该收的东西',        cond:s => s.flags.gift },
+  { id:'blame',        name:'替人担责',   desc:'替部属承担责任',          cond:s => s.flags.took_blame },
+  { id:'village',      name:'堤坝上的命令', desc:'违令先救群众',          cond:s => s.flags.saved_village },
+  { id:'gave_merit',   name:'让功',       desc:'把立功名额让给副手',      cond:s => s.flags.gave_merit },
+  /* 状态 */
+  { id:'disc_top',     name:'铁纪',       desc:'退役时作风纪律达到优秀',  cond:s => s.dv.discipline >= 88 },
+  { id:'disc_bad',     name:'失守',       desc:'退役时作风纪律不合格',    cond:s => s.dv.discipline < 62 },
+  { id:'attr_max',     name:'登峰造极',   desc:'任意一项属性达到上限',    cond:s => ATTRS.some(a => s.attr[a.key] >= 110) },
+  { id:'health_low',   name:'透支',       desc:'退役时健康低于 30',       cond:s => s.st.health < 30 },
+  { id:'heir3',        name:'桃李满园',   desc:'培养出 3 名接班人',       cond:s => (s.heir || 0) >= 3 },
+  { id:'injury5',      name:'九死一生',   desc:'累计负伤 5 次',           cond:s => s.injuryCount >= 5 },
+  { id:'iron_body',    name:'铁打的',     desc:'服役满 30 年从未负伤',    cond:s => s.injuryCount === 0 && s.serviceYear >= 30 },
+  { id:'martyr',       name:'碧血丹心',   desc:'在执行任务中牺牲',        cond:s => s.flags.martyr },
+  { id:'skill_s',      name:'技近乎道',   desc:'把一项技能练到 S 级',     cond:s => Object.keys(s.skills).some(k => s.skills[k] >= 6) },
+  /* 同期竞争 */
+  { id:'rank1',        name:'独占鳌头',   desc:'终局时同期排名第一',      cond:s => myRank(s).pos === 1 },
+  { id:'rank_last',    name:'殿后',       desc:'终局时同期排名垫底',      cond:s => myRank(s).pos === myRank(s).total },
+  /* 生涯 */
+  { id:'full50',       name:'五十年',     desc:'服役满 50 年',            cond:s => s.serviceYear >= 50 },
+  { id:'merit100k',    name:'功勋十万',   desc:'累计功勋超过 100000',     cond:s => s.merit >= 100000 },
+  { id:'grand_bid',    name:'问鼎',       desc:'向上将之上的荣誉发起过冲击', cond:s => s.flags.achGrandBid },
+  { id:'all_deeds',    name:'走遍山河',   desc:'维和、抢险、边防都去过',  cond:s => s.flags.peace && s.flags.rescue && s.flags.tough_area }
+];
+
+/* ---------- 家训（二周目继承，从父辈生涯中提炼） ---------- */
+const MOTTOS = [
+  { id:'m_martyr',   name:'满门忠烈', desc:'家族有人为国捐躯 · 全体属性 +3',
+    cond: p => p.flags && p.flags.martyr, mods:{ all:3 } },
+  { id:'m_general',  name:'将门虎子', desc:'父辈官至将官 · 初始功勋 +800、威望 +8',
+    cond: p => p.rankIdx >= 16, merit:800, st:{ prestige:8 } },
+  { id:'m_cmd',      name:'铁血家风', desc:'父辈走军事指挥线 · 体魄 +5、统率 +5',
+    cond: p => p.route === 'command', mods:{ tibo:5, tongshuai:5 } },
+  { id:'m_pol',      name:'铸魂家风', desc:'父辈走政治工作线 · 信念 +5、魅力 +5',
+    cond: p => p.route === 'political', mods:{ xinnian:5, meili:5 } },
+  { id:'m_stf',      name:'谋略家风', desc:'父辈走参谋后装线 · 智谋 +5、意志 +5',
+    cond: p => p.route === 'staff', mods:{ zhimou:5, yizhi:5 } },
+  { id:'m_border',   name:'戍边家风', desc:'父辈守过边关 · 意志 +6、健康 +8',
+    cond: p => p.flags && p.flags.tough_area, mods:{ yizhi:6 }, st:{ health:8 } },
+  { id:'m_clean',    name:'清廉家风', desc:'父辈作风纪律优秀 · 初始纪律 +12',
+    cond: p => p.disc >= 88, disc:12 },
+  { id:'m_heir',     name:'桃李家风', desc:'父辈桃李满园 · 培养接班人成功率大幅提升',
+    cond: p => (p.heir || 0) >= 3, heirBonus:true },
+  { id:'m_none',     name:'白手起家', desc:'不继承任何东西 · 可自由分配点数 +6',
+    cond: () => true, alloc:6 }
+];
+
+/* ---------- 二周目专属事件 ---------- */
+const LEGACY_EVENTS = [
+  { id:'ev_legacy_old', title:'父亲的旧部', min:0, max:6, weight:16, once:true, legacyOnly:true,
+    text:'一位头发花白的老军官在营门口等你。他说，他当年是{prename}手下的兵。',
+    options:[
+      { label:'请他进来，好好听他说说',   hint:'信念 +5 · 威望 +4 · 士气 +5',
+        fx:{ attr:{ xinnian:5 }, st:{ prestige:4, morale:5 } } },
+      { label:'只寒暄几句，不深谈',       hint:'威望 +2 · 纪律 +3',
+        fx:{ st:{ prestige:2 }, dv:{ discipline:3 } } },
+      { label:'请他给年轻干部讲一堂课',   hint:'政治素养 +5 · 士气 +6',
+        fx:{ dv:{ political:5 }, st:{ morale:6 } } }
+    ] },
+  { id:'ev_legacy_shadow', title:'父辈的影子', min:2, max:6, weight:14, once:true, legacyOnly:true,
+    text:'有人在背后议论：他能走到今天，靠的是{prename}的名声。',
+    options:[
+      { label:'不辩解，用实绩说话',       hint:'信念 +4 · 功勋 +400',
+        fx:{ attr:{ xinnian:4 }, merit:400 } },
+      { label:'当面把话说清楚',           hint:'威望 +5 · 首长信任 −3',
+        fx:{ st:{ prestige:5, trust:-3 } } },
+      { label:'主动申请去最苦的地方',     hint:'意志 +5 · 功勋 +600 · 健康 −5',
+        fx:{ attr:{ yizhi:5 }, merit:600, st:{ health:-5 } }, flag:'tough_area' }
+    ] }
+];
+
+/* ============================================================
+   事件链：把独立事件串成多步剧情线
+   选项里的 chain:{ id, delay } 会在 delay 个回合后触发后续事件，
+   每一步的选择决定下一步的走向。
+   ============================================================ */
+const CHAIN_EVENTS = [
+  /* ---------- 链一：改革风波（提出 → 受挫 → 结果） ---------- */
+  { id:'ev_ch_reform1', title:'一个想法', min:3, max:5, weight:12, once:true,
+    text:'这几年训练里的问题，你心里一直有本账。最近，你萌生了一个改法的念头。',
+    options:[
+      { label:'写成方案，正式上报',   hint:'功勋 +300 · 后续取决于方案能否通过',
+        fx:{ merit:300 }, chain:{ id:'ev_ch_reform2', delay:2 } },
+      { label:'先在自己单位悄悄试',   hint:'专业能力 +4 · 稳妥但成果有限',
+        fx:{ dv:{ professional:4 } }, chain:{ id:'ev_ch_reform2', delay:3 } },
+      { label:'想法不错，但现在不是时候', hint:'纪律 +3 · 放弃这次机会',
+        fx:{ dv:{ discipline:3 } } }
+    ] },
+  { id:'ev_ch_reform2', title:'方案受挫', min:3, max:6, weight:0, once:true, chained:true,
+    text:'方案摆到了会上。几位老同志当场提出质疑，认为这是标新立异、丢了传统。',
+    options:[
+      { label:'坚持推进，用数据说话',   hint:'功勋 +400 · 风险不小',
+        fx:{ merit:400 }, chain:{ id:'ev_ch_reform3', delay:2 } },
+      { label:'修改方案，先争取多数',   hint:'政治素养 +5 · 更稳',
+        fx:{ dv:{ political:5 } }, chain:{ id:'ev_ch_reform3b', delay:2 } },
+      { label:'撤回方案',               hint:'纪律 +4 · 威望 −3 · 事情到此为止',
+        fx:{ dv:{ discipline:4 }, st:{ prestige:-3 } } }
+    ] },
+  { id:'ev_ch_reform3', title:'试点结果', min:3, max:6, weight:0, once:true, chained:true,
+    text:'一年后，试点单位的数据出来了：训练成绩提升近两成，伤病率反而下降。',
+    options:[
+      { label:'上报推广，全面铺开',     hint:'功勋 +1500 · 威望 +6',
+        fx:{ merit:1500, st:{ prestige:6 } }, flag:'reform' },
+      { label:'先总结成经验材料',       hint:'专业能力 +6 · 功勋 +800',
+        fx:{ dv:{ professional:6 }, merit:800 }, flag:'reform' }
+    ] },
+  { id:'ev_ch_reform3b', title:'折中的结果', min:3, max:6, weight:0, once:true, chained:true,
+    text:'修改后的方案通过了，但只保留了原方案的一部分。有人说你太软，也有人说你懂得分寸。',
+    options:[
+      { label:'先做起来，以后再完善',   hint:'功勋 +700 · 专业能力 +4',
+        fx:{ merit:700, dv:{ professional:4 } } },
+      { label:'不甘心，继续争取',       hint:'功勋 +500 · 威望 −2',
+        fx:{ merit:500, st:{ prestige:-2 } } }
+    ] },
+
+  /* ---------- 链二：高原两年（申请 → 艰苦 → 归来） ---------- */
+  { id:'ev_ch_plateau1', title:'高原的召唤', min:2, max:3, weight:12, once:true,
+    text:'上级要抽调干部去高原边防代职两年。条件艰苦，但那里最缺人。',
+    options:[
+      { label:'主动报名',               hint:'信念 +4 · 履历上会多一笔硬的',
+        fx:{ attr:{ xinnian:4 } }, flag:'tough_area', chain:{ id:'ev_ch_plateau2', delay:2 } },
+      { label:'服从组织安排',           hint:'纪律 +3',
+        fx:{ dv:{ discipline:3 } }, chain:{ id:'ev_ch_plateau2', delay:3 } },
+      { label:'以家庭困难为由申请留任', hint:'家庭 +4 · 首长信任 −4',
+        fx:{ st:{ family:4, trust:-4 } } }
+    ] },
+  { id:'ev_ch_plateau2', title:'高原之上', min:2, max:6, weight:0, once:true, chained:true,
+    text:'海拔四千七百米。夜里睡不着，白天走几步就喘。妻子在电话里哭了两次。',
+    options:[
+      { label:'咬牙撑住',               hint:'意志 +6 · 健康 −8',
+        fx:{ attr:{ yizhi:6 }, st:{ health:-8 } }, chain:{ id:'ev_ch_plateau3', delay:2 } },
+      { label:'把家人接上来住一段',     hint:'家庭 +6 · 健康 −4',
+        fx:{ st:{ family:6, health:-4 } }, chain:{ id:'ev_ch_plateau3', delay:2 } },
+      { label:'申请提前调回',           hint:'家庭 +5 · 首长信任 −3',
+        fx:{ st:{ family:5, trust:-3 } }, chain:{ id:'ev_ch_plateau3b', delay:2 } }
+    ] },
+  { id:'ev_ch_plateau3', title:'归来', min:2, max:6, weight:0, once:true, chained:true,
+    text:'两年期满，你回到原来的单位。履历上多了一行，身体上少了一些东西。',
+    options:[
+      { label:'把高原的经验带回来',     hint:'军事素养 +6 · 功勋 +800',
+        fx:{ dv:{ military:6 }, merit:800 } },
+      { label:'低调归队，从头做起',     hint:'威望 +4 · 纪律 +4 · 功勋 +400',
+        fx:{ st:{ prestige:4 }, dv:{ discipline:4 }, merit:400 } }
+    ] },
+  { id:'ev_ch_plateau3b', title:'提前归来', min:2, max:6, weight:0, once:true, chained:true,
+    text:'你提前回到了平原。有人在背后说，你吃不了那个苦。',
+    options:[
+      { label:'不解释，随他们说',       hint:'信念 −3 · 意志 +3',
+        fx:{ attr:{ xinnian:-3, yizhi:3 } } },
+      { label:'主动申请更重的任务',     hint:'功勋 +600 · 健康 −5',
+        fx:{ merit:600, st:{ health:-5 } } }
+    ] },
+
+  /* ---------- 链三：部属成长（发现 → 他长大了） ---------- */
+  { id:'ev_ch_sub1', title:'一个好苗子', min:1, max:4, weight:13, once:true,
+    text:'你注意到一个年轻排长。他话不多，但每次任务都想得比别人深一层。',
+    options:[
+      { label:'重点培养，压担子',       hint:'他会记住这份知遇',
+        fx:{}, chain:{ id:'ev_ch_sub2', delay:3 } },
+      { label:'先观察一段时间再说',     hint:'稳妥',
+        fx:{}, chain:{ id:'ev_ch_sub2', delay:4 } },
+      { label:'顺其自然，看他自己的造化', hint:'不投入，也不期待',
+        fx:{}, chain:{ id:'ev_ch_sub2b', delay:3 } }
+    ] },
+  { id:'ev_ch_sub2', title:'他长大了', min:1, max:6, weight:0, once:true, chained:true,
+    text:'那位年轻排长在全师比武中拿了第一。表彰大会上，他第一个感谢的是你。',
+    options:[
+      { label:'把功劳全推给他',         hint:'威望 +6 · 士气 +5',
+        fx:{ st:{ prestige:6, morale:5 } }, heir:1 },
+      { label:'借机为他要一个更好的岗位', hint:'首长信任 +4',
+        fx:{ st:{ trust:4 } }, heir:1 },
+      { label:'私下提醒他不要飘',       hint:'政治素养 +5 · 士气 +3',
+        fx:{ dv:{ political:5 }, st:{ morale:3 } }, heir:1 }
+    ] },
+  { id:'ev_ch_sub2b', title:'各自的路', min:1, max:6, weight:0, once:true, chained:true,
+    text:'那个年轻排长后来调走了，去了别的单位。听说干得不错。',
+    options:[
+      { label:'托人带句话，祝他顺利',   hint:'士气 +3 · 信念 +2',
+        fx:{ st:{ morale:3 }, attr:{ xinnian:2 } } },
+      { label:'心里有点遗憾',           hint:'信念 +2',
+        fx:{ attr:{ xinnian:2 } } }
+    ] },
+
+  /* ---------- 链四：家庭（孩子的来信 → 多年以后） ---------- */
+  { id:'ev_ch_family1', title:'孩子的来信', min:2, max:4, weight:12, once:true,
+    text:'孩子给你写了一封信。信上说，同学问他爸爸是干什么的，他不知道该怎么回答。',
+    options:[
+      { label:'请一次假，回家好好陪他', hint:'家庭 +8 · 功勋 −300',
+        fx:{ st:{ family:8 }, merit:-300 } },
+      { label:'写信回去，认真跟他讲',   hint:'家庭 +5 · 信念 +3',
+        fx:{ st:{ family:5 }, attr:{ xinnian:3 } }, chain:{ id:'ev_ch_family2', delay:3 } },
+      { label:'把信收进抽屉，继续忙',   hint:'家庭 −5 · 功勋 +200',
+        fx:{ st:{ family:-5 }, merit:200 } }
+    ] },
+  { id:'ev_ch_family2', title:'多年以后', min:2, max:6, weight:0, once:true, chained:true,
+    text:'孩子高考填志愿那天给你打了个电话。他说，他想报军校。',
+    options:[
+      { label:'支持他，把路指给他',     hint:'家庭 +6 · 信念 +4',
+        fx:{ st:{ family:6 }, attr:{ xinnian:4 } }, heir:1 },
+      { label:'让他自己想清楚',         hint:'家庭 +4 · 威望 +2',
+        fx:{ st:{ family:4, prestige:2 } } },
+      { label:'劝他别走这条路',         hint:'家庭 +2 · 信念 −4',
+        fx:{ st:{ family:2 }, attr:{ xinnian:-4 } } }
+    ] }
+];
+
+/* ============================================================
+   具名 NPC 关系网
+   把"首长信任""搭档默契"这些抽象数字变成有名字、有性格、有独立履历的人。
+   ============================================================ */
+
+const NPC_SURNAMES = ['周','李','孙','陈','王','刘','赵','杨','黄','吴','徐','郑','马','林','高','谢','何','罗','秦','曹'];
+const NPC_GIVEN = ['建国','卫东','志强','立新','振华','铁军','明远','海涛','志刚','晓峰','国栋','云飞','长胜','向阳','建军','文斌','守成','大鹏','立国','永强'];
+const NPC_TAGS = ['沉稳','火爆','细致','圆滑','实干','耿直','机灵','木讷','要强','随和','寡言','爽快'];
+
+const NPC_ROLES = {
+  chief:       { name:'首长',  desc:'你的直接上级' },
+  partner:     { name:'搭档',  desc:'军政双主官的另一半' },
+  comrade:     { name:'战友',  desc:'同单位的同袍' },
+  subordinate: { name:'部属',  desc:'你一手带出来的兵' }
+};
+
+/* 行动对 NPC 好感度的影响 */
+const ACTION_NPC_AFFINITY = {
+  network:     { role:'chief',       v: 5 },
+  peer:        { role:'comrade',     v: 6 },
+  talk:        { role:'subordinate', v: 5 },
+  partner:     { role:'partner',     v: 6 },
+  lead:        { role:'subordinate', v: 3 },
+  build:       { role:'subordinate', v: 2 },
+  mentor:      { role:'subordinate', v: 4 },
+  unitBuild:   { role:'subordinate', v: 2 },
+  r_pol_talk:  { role:'subordinate', v: 6 },
+  r_pol_build: { role:'partner',     v: 5 },
+  r_cmd_post:  { role:'subordinate', v: 4 },
+  r_stf_equip: { role:'chief',       v: 3 }
+};
+
+/* NPC 事件模板。cond(s, npc) 决定是否可用；选项可用 npcFx 改变该 NPC 的状态。 */
+const NPC_EVENTS = [
+  {
+    id:'npc_sub_promote', role:'subordinate', weight:12, min:1,
+    cond:(s, n) => n.growth >= 78 && !n.graduated,
+    title:'{name}提干了',
+    text:'你一手带出来的{name}通过了提干考核。他要离开你的班排，去别的连队当排长了。',
+    options:[
+      { label:'为他高兴，亲自送他一程', hint:'威望 +5 · 士气 +5 · 功勋 +300',
+        fx:{ st:{ prestige:5, morale:5 }, merit:300 }, npcFx:{ affinity:10 } },
+      { label:'提醒他别忘了本',         hint:'政治素养 +4 · 士气 +3',
+        fx:{ dv:{ political:4 }, st:{ morale:3 } }, npcFx:{ affinity:5 } },
+      { label:'有点舍不得，但什么也没说', hint:'士气 +2 · 搭档默契 +2',
+        fx:{ st:{ morale:2, bond:2 } }, npcFx:{ affinity:3 } }
+    ]
+  },
+  {
+    id:'npc_sub_trouble', role:'subordinate', weight:11, min:1,
+    cond:(s, n) => n.growth >= 40,
+    title:'{name}出了岔子',
+    text:'{name}在一次任务中擅自改变部署，结果打赢了，但违反了命令。上级要追责。',
+    options:[
+      { label:'替他承担责任',       hint:'威望 +6 · 士气 +5 · 首长信任 −5',
+        fx:{ st:{ prestige:6, morale:5, trust:-5 } }, flag:'took_blame', npcFx:{ affinity:15 } },
+      { label:'如实上报，功过分明', hint:'纪律 +5 · 首长信任 +4 · 士气 −4',
+        fx:{ dv:{ discipline:5 }, st:{ trust:4, morale:-4 } }, npcFx:{ affinity:-8 } },
+      { label:'先内部批评，再为他请功', hint:'威望 +4 · 搭档默契 +3',
+        fx:{ st:{ prestige:4, bond:3 }, dv:{ political:2 } }, npcFx:{ affinity:8 } }
+    ]
+  },
+  {
+    id:'npc_comrade_leave', role:'comrade', weight:11, min:2,
+    cond:(s, n) => s.year >= 8,
+    title:'{name}要转业了',
+    text:'一起摸爬滚打多年的{name}递交了转业申请。他家里的情况你也知道，实在撑不下去了。',
+    options:[
+      { label:'想办法帮他解决困难',   hint:'士气 +5 · 威望 +3 · 功勋 −200',
+        fx:{ st:{ morale:5, prestige:3 }, merit:-200 }, npcFx:{ affinity:15 } },
+      { label:'尊重他的选择，好聚好散', hint:'士气 +3 · 政治素养 +3',
+        fx:{ st:{ morale:3 }, dv:{ political:3 } }, npcFx:{ affinity:8 } },
+      { label:'劝他再坚持几年',       hint:'士气 +1 · 搭档默契 +3',
+        fx:{ st:{ morale:1, bond:3 } }, npcFx:{ affinity:-5 } }
+    ]
+  },
+  {
+    id:'npc_comrade_merit', role:'comrade', weight:10, min:1,
+    cond:(s, n) => n.affinity >= 55,
+    title:'{name}立功了',
+    text:'{name}在这次任务中立了二等功。表彰大会上，他说这个功有一半是你的。',
+    options:[
+      { label:'把功劳全推给他',     hint:'威望 +5 · 士气 +5',
+        fx:{ st:{ prestige:5, morale:5 } }, npcFx:{ affinity:12 } },
+      { label:'如实说明是共同完成的', hint:'功勋 +400 · 搭档默契 +3',
+        fx:{ merit:400, st:{ bond:3 } }, npcFx:{ affinity:5 } }
+    ]
+  },
+  {
+    id:'npc_partner_clash', role:'partner', weight:11, min:2,
+    cond:() => true,
+    title:'和{name}的分歧',
+    text:'军事训练和政治教育的时间撞了。{name}坚持先上政治课，你认为训练一天都不能停。',
+    options:[
+      { label:'坚持己见，训练优先',   hint:'军事素养 +4 · 搭档默契 −5',
+        fx:{ dv:{ military:4 } }, npcFx:{ affinity:-10 } },
+      { label:'各退一步，调整计划',   hint:'搭档默契 +5 · 政治素养 +3',
+        fx:{ dv:{ political:3 }, st:{ bond:5 } }, npcFx:{ affinity:12 } },
+      { label:'请示上级裁定',         hint:'纪律 +3 · 首长信任 +2 · 搭档默契 −2',
+        fx:{ dv:{ discipline:3 }, st:{ trust:2, bond:-2 } }, npcFx:{ affinity:-4 } }
+    ]
+  },
+  {
+    id:'npc_partner_rise', role:'partner', weight:10, min:4,
+    cond:(s, n) => n.affinity >= 60,
+    title:'{name}要高升了',
+    text:'{name}要被调去上级机关任职。临走前他问你，愿不愿意一起走。',
+    options:[
+      { label:'留在基层，各走各路',   hint:'军事素养 +5 · 威望 +4',
+        fx:{ dv:{ military:5 }, st:{ prestige:4 } }, npcFx:{ affinity:6 } },
+      { label:'跟他一起去机关',       hint:'专业能力 +5 · 首长信任 +4 · 威望 −2',
+        fx:{ dv:{ professional:5 }, st:{ trust:4, prestige:-2 } }, flag:'staff_exp', npcFx:{ affinity:14 } },
+      { label:'请他帮忙在上级说话',   hint:'首长信任 +6 · 威望 −3',
+        fx:{ st:{ trust:6, prestige:-3 } }, npcFx:{ affinity:-6 } }
+    ]
+  },
+  {
+    id:'npc_chief_transfer', role:'chief', weight:11, min:3,
+    cond:(s, n) => s.year >= 15,
+    title:'{name}要调走了',
+    text:'一手把你带起来的{name}要调去别的单位了。临走前，他把你叫到办公室谈了很久。',
+    options:[
+      { label:'请他指点未来的路',     hint:'智谋 +4 · 首长信任 +6',
+        fx:{ attr:{ zhimou:4 }, st:{ trust:6 } }, npcFx:{ affinity:12 } },
+      { label:'请他为你的下一步说话', hint:'首长信任 +8 · 威望 −3',
+        fx:{ st:{ trust:8, prestige:-3 } }, flag:'asked_favor', npcFx:{ affinity:4 } },
+      { label:'只谈感情，不提要求',   hint:'信念 +4 · 威望 +4',
+        fx:{ attr:{ xinnian:4 }, st:{ prestige:4 } }, npcFx:{ affinity:16 } }
+    ]
+  },
+  {
+    id:'npc_chief_call', role:'chief', weight:10, min:2,
+    cond:(s, n) => n.affinity >= 65,
+    title:'{name}点将',
+    text:'{name}把你叫去，说有一项重要任务，想让你来挑头。',
+    options:[
+      { label:'接下任务，全力以赴',   hint:'功勋 +900 · 首长信任 +5 · 健康 −4',
+        fx:{ merit:900, st:{ trust:5, health:-4 } }, npcFx:{ affinity:8 } },
+      { label:'先问清楚风险和保障',   hint:'专业能力 +4 · 首长信任 +3',
+        fx:{ dv:{ professional:4 }, st:{ trust:3 } }, npcFx:{ affinity:4 } },
+      { label:'推荐别人去',           hint:'威望 +3 · 士气 +4 · 首长信任 −3',
+        fx:{ st:{ prestige:3, morale:4, trust:-3 } }, npcFx:{ affinity:-6 } }
+    ]
+  }
+];
+
+
+/* ============================================================
+   《将星之路》游戏引擎
+   时间轴 / 状态 / 行动 / 机会卡 / 同期竞争 / 任务推演 / 晋升 / 结局
+   ============================================================ */
+
+/* ---------- 时间轴 ---------- */
+const TIMELINE = (function () {
+  const seq = [];
+  STAGE_ORDER.forEach(k => {
+    const st = STAGES[k];
+    const years = st.to - st.from + 1;
+    if (st.turns === years * 2) {
+      for (let i = 0; i < st.turns; i++) {
+        const y = st.from + Math.floor(i / 2);
+        const half = i % 2 === 0 ? '上半年' : '下半年';
+        seq.push({ stage:k, idx:i, year:y, label:'第 ' + y + ' 年 · ' + half, short:'第' + y + '年' });
+      }
+    } else {
+      for (let i = 0; i < st.turns; i++) {
+        const y = st.from + i;
+        seq.push({ stage:k, idx:i, year:y, label:'第 ' + y + ' 年', short:'第' + y + '年' });
+      }
+    }
+  });
+  return seq;
+})();
+
+/* ---------- 工具 ---------- */
+function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
+function rnd(a, b) { return a + Math.random() * (b - a); }
+function ri(a, b) { return Math.floor(rnd(a, b + 1)); }
+
+const ATTR_NAME = {}; ATTRS.forEach(a => ATTR_NAME[a.key] = a.name);
+const DV_NAME = { military:'军事素养', political:'政治素养', professional:'专业能力', discipline:'作风纪律' };
+const ST_NAME = { morale:'士气', health:'健康', prestige:'威望', trust:'首长信任', bond:'搭档默契', family:'家庭' };
+
+/* ---------- 纪律等级（阶跃函数，一票否决） ---------- */
+function discGrade(v) {
+  if (v >= 88) return { name: '优秀', mul: 1.15, freeze: false };
+  if (v >= 75) return { name: '良好', mul: 1.00, freeze: false };
+  if (v >= 62) return { name: '合格', mul: 0.90, freeze: false };
+  return { name: '不合格', mul: 0, freeze: true };
+}
+
+/* ---------- 特质系数 ---------- */
+function traitMul(s, key) {
+  let m = 1;
+  s.traits.forEach(t => {
+    const fx = (TRAIT_MAP[t] || {}).fx;
+    if (fx && fx[key]) m += fx[key];
+  });
+  return Math.max(0.2, m);
+}
+function traitBonus(s, task) {
+  let b = 0;
+  s.traits.forEach(t => {
+    const fx = (TRAIT_MAP[t] || {}).fx || {};
+    if (fx.taskBonus) b += fx.taskBonus;
+    if (fx.combatBonus && task.kind === 'combat') b += fx.combatBonus;
+    if (fx.contestBonus && task.kind === 'contest') b += fx.contestBonus;
+  });
+  return b;
+}
+function traitRisk(s) {
+  let r = 0;
+  s.traits.forEach(t => {
+    const fx = (TRAIT_MAP[t] || {}).fx || {};
+    if (fx.riskAdd) r += fx.riskAdd;
+  });
+  return r;
+}
+
+/* ---------- 新游戏 ---------- */
+function newGame(name, alloc, traits, opts) {
+  const o = opts || {};
+  const enlist = ENLIST_TYPES[o.enlist] || ENLIST_TYPES.conscript;
+  const motto = o.motto && MOTTOS.find(m => m.id === o.motto) ? MOTTOS.find(m => m.id === o.motto) : null;
+
+  const s = {
+    name: name || '无名',
+    traits: traits.slice(),
+    enlist: enlist.key,
+    mottoId: motto ? motto.id : null,
+    legacy: !!o.legacy,
+    prename: o.prename || '',
+    turnIndex: 0,
+    year: 1, stage: 'recruit',
+    age: 18, serviceYear: 1,
+    attr: {}, dv: {}, st: {},
+    merit: 0, rankIdx: enlist.startRank || 0, sp: enlist.sp || 0, spSpent: 0, skills: {},
+    route: null, routeSwitched: false, routeChosenYear: 0,
+    heir: 0, flags: {},
+    usedEvents: [],
+    notified: {},
+    pendingEchoes: [],
+    pendingChains: [],
+    ap: 8, apMax: 8, usedActions: {},
+    opportunities: [],
+    rivals: [],
+    rankPos: 1, rankTotal: 8, prevRankPos: 1,
+    log: [], history: [],
+    ended: false, ending: null, endReason: null,
+    injuryCount: 0
+  };
+
+  ATTRS.forEach(a => { s.attr[a.key] = ATTR_BASE + (alloc[a.key] || 0); });
+  s.dv = { military: 0, political: 0, professional: 0, discipline: 66 };
+  s.dvBonus = { military: 0, political: 0, professional: 0 };
+  STATES.forEach(x => { s.st[x.key] = x.init; });
+  SKILL_BRANCHES.forEach(b => b.skills.forEach(k => { s.skills[k.key] = 0; }));
+
+  // 入伍方式的先天修正
+  if (enlist.mods) {
+    for (const k in enlist.mods) {
+      if (k === 'military') s.dvBonus.military += enlist.mods[k];
+      else if (s.attr[k] != null) s.attr[k] += enlist.mods[k];
+    }
+  }
+  if (enlist.flags) for (const k in enlist.flags) s.flags[k] = enlist.flags[k];
+  s.enlistNeedMul = enlist.needMul || 1;
+
+  // 家训（二周目继承）
+  if (motto) {
+    if (motto.mods) {
+      for (const k in motto.mods) {
+        if (k === 'all') ATTRS.forEach(a => { s.attr[a.key] += motto.mods.all; });
+        else if (s.attr[k] != null) s.attr[k] += motto.mods[k];
+      }
+    }
+    if (motto.merit) s.merit += motto.merit;
+    if (motto.st) for (const k in motto.st) s.st[k] = clamp(s.st[k] + motto.st[k], 0, 100);
+    if (motto.disc) s.dv.discipline = clamp(s.dv.discipline + motto.disc, 0, 110);
+    if (motto.heirBonus) s.flags.heirBonus = true;
+    if (motto.alloc) s.flags.bonusAlloc = motto.alloc;
+  }
+  if (traits.indexOf('stubborn') >= 0) s.attr.xinnian += 5;
+
+  computeDerived(s);
+  initRivals(s);
+  initNPCs(s);
+  const t = TIMELINE[0];
+  s.year = t.year; s.stage = t.stage;
+  s.ap = STAGES[s.stage].ap; s.apMax = s.ap;
+
+  pushLog(s, '入伍', '你穿上了新军装，胸前别着大红花。' + (enlist.key !== 'conscript' ? '（' + enlist.name + '）' : ''), 'gold');
+  pushHistory(s, '入伍', '以' + enlist.name + '身份入伍，授' + RANKS[s.rankIdx].name + '军衔', 'rank');
+  if (motto) {
+    pushLog(s, '家风', '你带着「' + motto.name + '」走进了军营。', 'gold');
+    pushHistory(s, '继承家训', motto.name + ' —— ' + motto.desc, 'gold');
+  }
+  return s;
+}
+
+function computeDerived(s) {
+  const a = s.attr;
+  const b = s.dvBonus || { military: 0, political: 0, professional: 0 };
+  s.dv.military = clamp((a.tibo * 0.4 + a.tongshuai * 0.4 + a.zhimou * 0.2) + b.military, 0, 110);
+  s.dv.political = clamp((a.xinnian * 0.5 + a.meili * 0.3 + a.yizhi * 0.2) + b.political, 0, 110);
+  s.dv.professional = clamp((a.zhimou * 0.5 + a.yizhi * 0.3 + a.tibo * 0.2) + b.professional, 0, 110);
+}
+
+/* ---------- 同期军官 ---------- */
+function initRivals(s) {
+  const pool = RIVAL_NAMES.slice();
+  s.rivals = [];
+  for (let i = 0; i < 7; i++) {
+    const name = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
+    s.rivals.push({
+      name: name,
+      tag: RIVAL_TAGS[Math.floor(Math.random() * RIVAL_TAGS.length)],
+      power: rnd(0.82, 1.18),
+      merit: 0
+    });
+  }
+}
+
+function tickRivals(s) {
+  const base = RIVAL_GAIN[s.stage] || 300;
+  s.rivals.forEach(r => { r.merit += base * r.power * rnd(0.82, 1.18); });
+}
+
+function rivalRankIdx(merit) {
+  let idx = 0;
+  for (let i = 0; i < RANKS.length; i++) if (merit >= RANKS[i].need) idx = i;
+  return idx;
+}
+
+/* ============================================================
+   具名 NPC 关系网
+   ============================================================ */
+function mkNpcName(used) {
+  for (let i = 0; i < 300; i++) {
+    const n = NPC_SURNAMES[ri(0, NPC_SURNAMES.length - 1)] + NPC_GIVEN[ri(0, NPC_GIVEN.length - 1)];
+    if (used.indexOf(n) < 0 && n !== '无名') { used.push(n); return n; }
+  }
+  return '无名';
+}
+
+function initNPCs(s) {
+  const used = [];
+  const mk = (id, role, aff, growth) => ({
+    id: id, role: role, name: mkNpcName(used),
+    tag: NPC_TAGS[ri(0, NPC_TAGS.length - 1)],
+    affinity: aff, growth: growth == null ? 0 : growth, active: true
+  });
+  s.npcs = [
+    mk('chief',   'chief',       55),
+    mk('partner', 'partner',     50),
+    mk('com1',    'comrade',     45),
+    mk('com2',    'comrade',     38),
+    mk('sub1',    'subordinate', 45, 22),
+    mk('sub2',    'subordinate', 40, 10)
+  ];
+  pushHistory(s, '结识同袍',
+    s.npcs.map(n => NPC_ROLES[n.role].name + ' ' + n.name).join('　'), '');
+}
+
+function npcByRole(s, role) { return (s.npcs || []).filter(n => n.role === role && n.active); }
+
+function avgAffinity(s, role) {
+  const list = npcByRole(s, role);
+  if (!list.length) return 0;
+  return list.reduce((n, x) => n + x.affinity, 0) / list.length;
+}
+
+function addAffinity(s, role, v) {
+  (s.npcs || []).forEach(n => {
+    if (n.role !== role || !n.active) return;
+    n.affinity = clamp(n.affinity + v, 0, 100);
+  });
+}
+
+/* 每回合的 NPC 演化：好感度淡化、部属成长、关系转化为士气 */
+function npcTick(s) {
+  if (!s.npcs) return;
+  s.npcs.forEach(n => {
+    if (!n.active) return;
+    n.affinity = clamp(n.affinity - 0.35, 0, 100);
+    if (n.role === 'subordinate') {
+      let g = rnd(0.7, 1.9);
+      if (hasS(s, 'daibing')) g *= 1.7;
+      if (s.flags.heirBonus) g *= 1.6;
+      if (n.affinity >= 60) g *= 1.2;
+      n.growth = Math.min(120, (n.growth || 0) + g);
+      if (n.growth >= 100 && !n.graduated) {
+        n.graduated = true;
+        applyEffects(s, { merit: 500, st: { prestige: 3 } });
+        pushLog(s, '部属提干', n.name + ' 通过了提干考核，成了排长。', 'gold');
+        pushHistory(s, '部属提干', n.name + ' 通过提干考核，成了排长', 'gold');
+      }
+    }
+  });
+  if (avgAffinity(s, 'comrade') >= 65) s.st.morale = clamp(s.st.morale + 0.8, 0, 100);
+  if (avgAffinity(s, 'subordinate') >= 65) s.st.morale = clamp(s.st.morale + 0.6, 0, 100);
+}
+
+/* 把 NPC 事件模板实例化到具体的人身上 */
+function pickNpcEvent(s) {
+  if (!s.npcs || !s.npcs.length) return null;
+  const si = stageIndex(s.stage);
+  const cands = [];
+  s.npcs.forEach(n => {
+    if (!n.active) return;
+    NPC_EVENTS.forEach(t => {
+      if (t.role !== n.role) return;
+      if (si < (t.min || 0)) return;
+      if (s.usedEvents.indexOf(t.id + ':' + n.id) >= 0) return;
+      if (t.cond && !t.cond(s, n)) return;
+      cands.push({ tpl: t, npc: n });
+    });
+  });
+  if (!cands.length) return null;
+  if (Math.random() > 0.2) return null;
+
+  let total = 0; cands.forEach(c => total += c.tpl.weight);
+  let r = Math.random() * total;
+  let pick = cands[cands.length - 1];
+  for (const c of cands) { r -= c.tpl.weight; if (r <= 0) { pick = c; break; } }
+
+  const t = pick.tpl, n = pick.npc;
+  const fill = txt => (txt || '').replace(/\{name\}/g, n.name);
+  return {
+    id: t.id + ':' + n.id,
+    title: fill(t.title),
+    text: fill(t.text),
+    npcEvent: true,
+    npcRole: n.role,
+    options: t.options.map(o => ({
+      label: fill(o.label),
+      hint: o.hint,
+      fx: o.fx,
+      flag: o.flag,
+      risky: o.risky,
+      npc: n,
+      npcFx: o.npcFx
+    }))
+  };
+}
+
+/* 玩家在同批人中的位次 */
+function myRank(s) {
+  let better = 0;
+  (s.rivals || []).forEach(r => { if (r.merit > s.merit) better++; });
+  const total = (s.rivals || []).length + 1;
+  return { pos: better + 1, total: total, better: better, pct: total > 1 ? better / (total - 1) : 0 };
+}
+
+/* ---------- 效果应用 ---------- */
+function applyEffects(s, fx, scale) {
+  const k = scale == null ? 1 : scale;
+  const changes = [];
+  if (!fx) return changes;
+
+  if (fx.attr) {
+    for (const key in fx.attr) {
+      const raw = fx.attr[key] * k;
+      const before = s.attr[key];
+      s.attr[key] = clamp(before + raw, 0, ATTR_CAP);
+      const d = s.attr[key] - before;
+      if (Math.abs(d) > 0.05) changes.push({ label: ATTR_NAME[key], v: d });
+    }
+  }
+
+  if (fx.dv) {
+    for (const key in fx.dv) {
+      let raw = fx.dv[key] * k;
+      if (key === 'discipline') {
+        raw *= traitMul(s, 'discMul');
+        if (raw > 0) raw *= Math.pow(Math.max(0, 1 - s.dv.discipline / 110), 1.1);
+        const before = s.dv[key];
+        s.dv[key] = clamp(before + raw, 0, 110);
+        const d = s.dv[key] - before;
+        if (Math.abs(d) > 0.05) changes.push({ label: DV_NAME[key], v: d });
+      } else {
+        // 军事素养 / 政治素养 / 专业能力 由属性推导，行动带来的增量单独累计
+        if (!s.dvBonus) s.dvBonus = { military: 0, political: 0, professional: 0 };
+        if (key === 'political') raw *= traitMul(s, 'politicalMul');
+        const before = s.dv[key];
+        if (raw > 0) {
+          const headroom = Math.max(0, 1 - before / 110);
+          raw *= Math.pow(headroom, 1.4);
+        }
+        s.dvBonus[key] = Math.max(-60, (s.dvBonus[key] || 0) + raw);
+        computeDerived(s);
+        const d = s.dv[key] - before;
+        if (Math.abs(d) > 0.05) changes.push({ label: DV_NAME[key], v: d });
+      }
+    }
+  }
+
+  if (fx.st) {
+    for (const key in fx.st) {
+      let raw = fx.st[key] * k;
+      if (key === 'trust') raw *= traitMul(s, 'trustMul');
+      if (key === 'prestige') raw *= traitMul(s, 'prestigeMul');
+      if (key === 'bond') raw *= traitMul(s, 'bondMul');
+      if (raw > 0 && key !== 'health') {
+        raw *= Math.pow(Math.max(0, 1 - s.st[key] / 100), 0.6);
+      }
+      const before = s.st[key];
+      s.st[key] = clamp(before + raw, 0, 100);
+      const d = s.st[key] - before;
+      if (Math.abs(d) > 0.05) changes.push({ label: ST_NAME[key], v: d });
+    }
+  }
+
+  if (fx.merit) {
+    let raw = fx.merit * k;
+    if (raw > 0) raw *= traitMul(s, 'meritMul');
+    s.merit = Math.max(0, s.merit + raw);
+    if (Math.abs(raw) > 0.5) changes.push({ label: '功勋', v: raw });
+  }
+
+  if (fx.sp) {
+    const v = Math.round(fx.sp * k);
+    s.sp += v;
+    if (v) changes.push({ label: '技能点', v: v });
+  }
+
+  if (fx.heir) {
+    const chance = s.flags && s.flags.heirBonus ? 0.6 : 0.3;
+    if (s.heir < 3 && Math.random() < chance) {
+      s.heir += 1;
+      changes.push({ label: '培养接班人', v: 1 });
+    }
+  }
+
+  if (fx.flag) s.flags[fx.flag] = true;
+
+  computeDerived(s);
+  return changes;
+}
+
+/* ---------- 日志 / 履历 ---------- */
+function pushLog(s, title, text, kind) {
+  s.log.unshift({ year: s.year, stage: STAGES[s.stage].name, title, text, kind: kind || '' });
+  if (s.log.length > 300) s.log.pop();
+}
+function pushHistory(s, title, text, kind) {
+  s.history.push({ year: s.year, age: s.age, title, text, kind: kind || '' });
+}
+
+/* ---------- 回合 ---------- */
+function currentTurn(s) { return TIMELINE[s.turnIndex]; }
+
+function beginTurn(s) {
+  s.apMax = STAGES[s.stage].ap;
+  s.ap = s.apMax;
+  s.usedActions = {};
+  drawOpportunities(s);
+  s.prevRankPos = myRank(s).pos;
+}
+
+/* 抽机会卡 */
+function drawOpportunities(s) {
+  const si = stageIndex(s.stage);
+  const pool = OPPORTUNITIES.filter(o => si >= o.min);
+  const copy = pool.slice();
+  const picked = [];
+  for (let i = 0; i < 3 && copy.length; i++) {
+    picked.push(copy.splice(Math.floor(Math.random() * copy.length), 1)[0]);
+  }
+  s.opportunities = picked.map(o => o.id);
+}
+
+function findAction(id) {
+  return ACTIONS.find(a => a.id === id)
+    || ROUTE_ACTIONS.find(a => a.id === id)
+    || OPPORTUNITIES.find(o => o.id === id);
+}
+
+function availableActions(s) {
+  const si = stageIndex(s.stage);
+  const base = ACTIONS.filter(a =>
+    si >= a.min && (a.reqRank == null || s.rankIdx >= a.reqRank));
+  const routeActs = s.route
+    ? ROUTE_ACTIONS.filter(a => a.route === s.route && si >= a.min)
+    : [];
+  const opps = (s.opportunities || []).map(id => OPPORTUNITIES.find(o => o.id === id)).filter(Boolean);
+  return base.concat(routeActs).concat(opps);
+}
+
+/* 重大功勋数量（大元帅的必要条件） */
+function greatDeeds(s) {
+  return GREAT_DEED_FLAGS.reduce((n, f) => n + (s.flags[f] ? 1 : 0), 0);
+}
+
+/* ---------- 路线 ---------- */
+function skillBranchOf(skillKey) {
+  for (const b of SKILL_BRANCHES) {
+    if (b.skills.some(k => k.key === skillKey)) return b.key;
+  }
+  return null;
+}
+
+/* 本路线对应技能分支的升级消耗享受折扣 */
+function skillCost(s, skillKey, nextLv) {
+  const base = SKILL_COST[nextLv];
+  if (!base) return base;
+  if (s.route && skillBranchOf(skillKey) === ROUTES[s.route].branch) {
+    return Math.max(1, base - 1);
+  }
+  return base;
+}
+
+function chooseRoute(s, key) {
+  if (!ROUTES[key]) return false;
+  s.route = key;
+  s.routeChosenYear = s.year;
+  const r = ROUTES[key];
+  pushLog(s, '选定路线', '你选择了' + r.name + '——' + r.motto, 'gold');
+  pushHistory(s, '选择' + r.name, r.desc, 'rank');
+  s.st.prestige = clamp(s.st.prestige + 3, 0, 100);
+  return true;
+}
+
+function switchRoute(s, key) {
+  if (!ROUTES[key] || s.routeSwitched || key === s.route) return { ok: false };
+  const cost = ROUTE_SWITCH_COST;
+  if (s.merit < cost.merit) return { ok: false, reason: '功勋不足（需 ' + cost.merit + '）' };
+  s.merit -= cost.merit;
+  s.st.prestige = clamp(s.st.prestige - cost.prestige, 0, 100);
+  const from = ROUTES[s.route];
+  s.route = key;
+  s.routeSwitched = true;
+  pushLog(s, '转线', '由' + from.name + '转为' + ROUTES[key].name + '，付出不小代价', 'bad');
+  pushHistory(s, '转线至' + ROUTES[key].name, '中途调整了成长方向', 'bad');
+  return { ok: true };
+}
+
+/* 路线的晋升指标要求（少将 / 中将 / 上将） */
+function routeGateMiss(s, nextIdx) {
+  if (!s.route) return [];
+  const r = ROUTES[s.route];
+  const tier = nextIdx - 16;                    // 16→0, 17→1, 18→2
+  if (tier < 0 || tier > 2) return [];
+  const miss = [];
+  const cur = s.dv[r.stat];
+  if (cur < r.gateNeeds[tier]) miss.push(r.statName + ' ' + Math.round(cur) + '/' + r.gateNeeds[tier]);
+  const ex = s.dv[r.extraKey] != null ? s.dv[r.extraKey] : s.attr[r.extraKey];
+  if (ex != null && ex < r.extraNeeds[tier]) miss.push(r.extraName + ' ' + Math.round(ex) + '/' + r.extraNeeds[tier]);
+  return miss;
+}
+
+/* 行动收益系数：行动点压缩到 5~7 之后，单次行动的收益相应放大，
+   让每一回合"选择更少、但每一次更有分量"。 */
+const ACTION_SCALE = 1.6;
+
+function doAction(s, id) {
+  const a = findAction(id);
+  if (!a) return { ok: false };
+  if (s.ap < a.ap) return { ok: false, reason: '行动点不足' };
+  const used = s.usedActions[id] || 0;
+  if (used >= 2) return { ok: false, reason: '本回合已达上限' };
+
+  s.ap -= a.ap;
+  s.usedActions[id] = used + 1;
+  const scale = Math.pow(0.8, used) * ACTION_SCALE;
+  const changes = applyEffects(s, a.fx, scale);
+  // 行动会作用到具体的人，而不再只是抽象数值
+  const nf = ACTION_NPC_AFFINITY[id];
+  if (nf) addAffinity(s, nf.role, nf.v * scale);
+  // 冲击大元帅的成就标记
+  if (id === 'grandBid') s.flags.achGrandBid = true;
+  return { ok: true, changes: changes, action: a, scale: scale };
+}
+
+/* 由效果数据自动生成行动描述，保证说明与实际结算永远一致 */
+function fmtNum(v) {
+  const r = Math.round(v * 10) / 10;
+  return (r > 0 ? '+' : '') + (Math.abs(r % 1) < 0.05 ? Math.round(r) : r.toFixed(1));
+}
+function describeFx(fx, k) {
+  if (!fx) return '';
+  const kk = k == null ? 1 : k;
+  const parts = [];
+  if (fx.attr) for (const key in fx.attr) parts.push(ATTR_NAME[key] + ' ' + fmtNum(fx.attr[key] * kk));
+  if (fx.dv) for (const key in fx.dv) parts.push(DV_NAME[key] + ' ' + fmtNum(fx.dv[key] * kk));
+  if (fx.st) for (const key in fx.st) parts.push(ST_NAME[key] + ' ' + fmtNum(fx.st[key] * kk));
+  if (fx.merit) parts.push('功勋 ' + fmtNum(fx.merit * kk));
+  if (fx.sp) parts.push('技能点 +' + Math.round(fx.sp * kk));
+  if (fx.heir) parts.push('培养接班人机会');
+  return parts.join(' · ');
+}
+
+/* 自动安排行动：按"先补短板、再攒功勋"的动态优先级花掉行动点。
+   纪律是晋升硬门槛，跌破阈值时优先补；健康同理；其余行动点用于积累功勋。 */
+const MERIT_ACTIONS = ['lead','build','unitBuild','campaign','joint','serviceBuild'];
+const FILLER_ACTIONS = ['fitness','study','shoot','command','staff','talk','network','apparatus'];
+
+/* 路线专属行动通常比通用行动更强，排在功勋行动之前 */
+function meritActionsFor(s) {
+  const base = MERIT_ACTIONS.slice();
+  // 上将之后可以主动冲击大元帅（消耗极大，是明确的取舍）
+  if (s.rankIdx >= 18) base.unshift('grandBid');
+  if (!s.route) return base;
+  const routeIds = ROUTE_ACTIONS.filter(a => a.route === s.route).map(a => a.id);
+  return routeIds.concat(base);
+}
+
+function autoSpendAP(s, opts) {
+  const o = opts || {};
+  const discTarget = o.discTarget || 78;
+  const meritTarget = o.meritTarget || 2;
+  let guard = 0;
+  let meritDone = 0;
+  while (s.ap > 0 && guard++ < 40) {
+    let acted = false;
+
+    // 1. 上将阶段：接班人（上将/大元帅的硬条件之一）
+    if (stageIndex(s.stage) >= 5 && s.heir < 3 && s.ap >= 2 && (s.usedActions['mentor'] || 0) < 2) {
+      if (doAction(s, 'mentor').ok) continue;
+    }
+    // 2. 纪律低于阈值时补纪律（每次只补 1 点，避免挤占功勋）
+    if (s.dv.discipline < discTarget) {
+      for (const id of ['drill', 'poledu']) {
+        const a = ACTIONS.find(x => x.id === id);
+        if (a && a.ap <= s.ap && (s.usedActions[id] || 0) < 1) {
+          if (doAction(s, id).ok) { acted = true; break; }
+        }
+      }
+      if (acted) continue;
+    }
+    // 3. 先保证每回合至少有一次功勋行动（否则晋升会停滞）
+    if (meritDone < meritTarget) {
+      for (const id of meritActionsFor(s)) {
+        const a = findAction(id);
+        if (!a || stageIndex(s.stage) < a.min) continue;
+        if (a.reqRank != null && s.rankIdx < a.reqRank) continue;
+        if (a.ap <= s.ap && (s.usedActions[id] || 0) < 2) {
+          if (doAction(s, id).ok) { meritDone++; acted = true; break; }
+        }
+      }
+      if (acted) continue;
+    }
+    // 4. 机会卡：每回合限定，不用就作废
+    for (const id of (s.opportunities || [])) {
+      const o = OPPORTUNITIES.find(x => x.id === id);
+      if (!o || o.ap > s.ap || (s.usedActions[id] || 0) >= 1) continue;
+      const hpCost = (o.fx && o.fx.st && o.fx.st.health) || 0;
+      if (hpCost < 0 && s.st.health < 65) continue;
+      if (doAction(s, id).ok) { acted = true; break; }
+    }
+    if (acted) continue;
+    // 5. 健康偏低时休息
+    if (s.st.health < 80 && s.ap >= 1 && (s.usedActions['rest'] || 0) < 2) {
+      if (doAction(s, 'rest').ok) continue;
+    }
+    // 6. 其余行动点用于补属性
+    for (const id of FILLER_ACTIONS) {
+      const a = ACTIONS.find(x => x.id === id);
+      if (!a || stageIndex(s.stage) < a.min) continue;
+      if (a.ap <= s.ap && (s.usedActions[id] || 0) < 2) {
+        if (doAction(s, id).ok) { acted = true; break; }
+      }
+    }
+    if (!acted) break;
+  }
+  return s.ap;
+}
+
+/* ---------- 回合结算与推进 ---------- */
+function finishTurn(s) {
+  settleTurn(s);
+
+  s.turnIndex++;
+  if (s.turnIndex >= TIMELINE.length) {
+    finishCareer(s, '服役期满');
+    return { queue: [], finished: true };
+  }
+  const t = TIMELINE[s.turnIndex];
+  const prevStage = s.stage;
+  s.year = t.year; s.stage = t.stage;
+  s.age = 18 + (t.year - 1);
+  s.serviceYear = t.year;
+
+  const queue = [];
+
+  if (prevStage !== s.stage) {
+    const st = STAGES[s.stage];
+    pushLog(s, '进入' + st.name, st.desc, 'gold');
+    pushHistory(s, '进入' + st.name, st.desc, 'rank');
+    queue.push({ type: 'stage', data: st });
+  }
+
+  fireEchoes(s, queue);
+  fireChains(s, queue);
+
+  // 进入尉官期后仍未定路线，先让玩家做抉择
+  if (!s.route && stageIndex(s.stage) >= stageIndex(ROUTE_STAGE)) {
+    queue.push({ type: 'route' });
+  }
+
+  const ev = pickEvent(s);
+  if (ev) queue.push({ type: 'event', data: ev });
+
+  const npcEv = pickNpcEvent(s);
+  if (npcEv) queue.push({ type: 'event', data: npcEv });
+
+  const tk = pickTask(s);
+  if (tk) queue.push({ type: 'task', data: tk });
+
+  const pr = checkPromotion(s);
+  if (pr) queue.push({ type: 'promotion', data: pr });
+
+  return { queue: queue, finished: false };
+}
+
+function settleTurn(s) {
+  // 同期军官与关系网同步演化
+  tickRivals(s);
+  npcTick(s);
+
+  // 士气向 55 回归
+  const m = s.st.morale;
+  s.st.morale = clamp(m + (m > 55 ? -2.0 : m < 55 ? 1.5 : 0), 0, 100);
+
+  // 健康：由年龄决定基准值，再向基准缓慢回归。
+  // 负伤与透支会把它打到基准以下，但不会不可逆地一路滑坡。
+  let base = 92;
+  if (s.age >= 30) base = 88;
+  if (s.age >= 38) base = 82;
+  if (s.age >= 45) base = 74;
+  if (s.age >= 52) base = 65;
+  if (s.age >= 58) base = 56;
+  if (s.age >= 63) base = 48;
+  if (s.st.health < base) s.st.health = Math.min(base, s.st.health + 1.1);
+  else s.st.health = Math.max(base, s.st.health - 0.5);
+  s.st.health = clamp(s.st.health, 0, 100);
+
+  // 纪律向基准值回归（基准设在"合格"线之上，避免不违纪的玩家被永久锁死）
+  // S 级「条令权威」使自然衰减减半
+  const DISC_BASE = 66;
+  const discDecay = hasS(s, 'tiaoling') ? 0.175 : 0.35;
+  if (s.dv.discipline > DISC_BASE) s.dv.discipline = Math.max(DISC_BASE, s.dv.discipline - discDecay);
+  else if (s.dv.discipline < DISC_BASE) s.dv.discipline = Math.min(DISC_BASE, s.dv.discipline + 0.5);
+
+  // 威望与首长信任随时间淡化
+  s.st.prestige *= 0.972;
+  s.st.trust *= 0.975;
+
+  // 派生指标的加成也会随长期荒废而回落
+  if (s.dvBonus) {
+    ['military', 'political', 'professional'].forEach(k => {
+      s.dvBonus[k] = (s.dvBonus[k] || 0) * 0.985;
+    });
+    computeDerived(s);
+  }
+
+  // 家庭与搭档长期不投入会疏远
+  s.st.family = clamp(s.st.family - 0.9, 0, 100);
+  s.st.bond = clamp(s.st.bond - 0.5, 0, 100);
+
+  s.traits.forEach(t => {
+    const fx = (TRAIT_MAP[t] || {}).fx || {};
+    if (fx.moraleFloor && s.st.morale < fx.moraleFloor) s.st.morale = fx.moraleFloor;
+  });
+
+  computeDerived(s);
+
+  if (s.st.health <= 0) finishCareer(s, '健康原因退役');
+}
+
+/* ---------- 事件 ---------- */
+function pickEvent(s) {
+  const si = stageIndex(s.stage);
+  let pool = EVENTS.filter(e =>
+    s.usedEvents.indexOf(e.id) < 0 && si >= e.min && si <= e.max
+  );
+  // 事件链的"起点"同样进入随机池（带 chained 标记的是后续节点，只能由链条触发）
+  pool = pool.concat(CHAIN_EVENTS.filter(e =>
+    !e.chained && e.weight > 0 && s.usedEvents.indexOf(e.id) < 0 && si >= e.min && si <= e.max
+  ));
+  // 二周目专属事件
+  if (s.legacy) {
+    pool = pool.concat(LEGACY_EVENTS.filter(e => s.usedEvents.indexOf(e.id) < 0 && si >= e.min && si <= e.max));
+  }
+  if (!pool.length) return null;
+  if (Math.random() > 0.36) return null;
+
+  let total = 0;
+  pool.forEach(e => total += e.weight);
+  let r = Math.random() * total;
+  for (const e of pool) {
+    r -= e.weight;
+    if (r <= 0) return e;
+  }
+  return pool[pool.length - 1];
+}
+
+/* 把事件文本里的占位符换成真实姓名 */
+function fillNames(s, text) {
+  if (!text) return '';
+  return text
+    .replace(/\{prename\}/g, s.prename || '父辈')
+    .replace(/\{name\}/g, s.name);
+}
+
+function applyOption(s, ev, opt) {
+  s.usedEvents.push(ev.id);
+  const changes = applyEffects(s, opt.fx);
+  let hiddenNote = null;
+  let hiddenChanges = [];
+  if (opt.hidden && Math.random() < opt.hidden.chance) {
+    hiddenChanges = applyEffects(s, opt.hidden);
+    hiddenNote = opt.hidden.note;
+  }
+  if (opt.flag) s.flags[opt.flag] = true;
+  if (opt.risky) s.flags.riskyCount = (s.flags.riskyCount || 0) + 1;
+
+  // NPC 事件：改变具体 NPC 的好感度与履历
+  if (opt.npc && opt.npcFx) {
+    if (opt.npcFx.affinity) opt.npc.affinity = clamp(opt.npc.affinity + opt.npcFx.affinity, 0, 100);
+    if (opt.npcFx.growth) opt.npc.growth = Math.max(0, (opt.npc.growth || 0) + opt.npcFx.growth);
+    if (opt.npcFx.inactive) opt.npc.active = false;
+  }
+
+  // 事件链：安排后续事件
+  if (opt.chain && opt.chain.id) {
+    if (!s.pendingChains) s.pendingChains = [];
+    s.pendingChains.push({ at: s.turnIndex + (opt.chain.delay || 2), id: opt.chain.id });
+  }
+
+  pushLog(s, ev.title, opt.label + (hiddenNote ? '（' + hiddenNote + '）' : ''), hiddenNote ? 'bad' : '');
+  return { changes: changes, hiddenChanges: hiddenChanges, hiddenNote: hiddenNote };
+}
+
+/* ---------- 事件链 ---------- */
+function fireChains(s, queue) {
+  if (!s.pendingChains || !s.pendingChains.length) return;
+  const due = [];
+  s.pendingChains = s.pendingChains.filter(c => {
+    if (c.at <= s.turnIndex) { due.push(c); return false; }
+    return true;
+  });
+  due.forEach(c => {
+    const ev = CHAIN_EVENTS.find(e => e.id === c.id);
+    if (ev && s.usedEvents.indexOf(ev.id) < 0) queue.push({ type: 'event', data: ev });
+  });
+}
+
+/* ---------- 回响 ---------- */
+const ECHO_RULES = [
+  { flag:'helped_comrade',  after: 6,  text:'当年你借钱的那个战友，如今已是你的上级。评审会上他替你说了话。', fx:{ st:{ trust:3 } } },
+  { flag:'gave_up',         after: 7,  text:'你让出比武名额的老周，后来成了你最坚定的搭档。', fx:{ st:{ bond:5 } } },
+  { flag:'gave_merit',      after: 6,  text:'把立功名额让给副手的旧事，如今在干部部门被反复提起。', fx:{ st:{ prestige:4 } } },
+  { flag:'took_blame',      after: 7,  text:'你替排长担下的那次责任，让他此后十年对你死心塌地。', fx:{ st:{ morale:4, prestige:3 } } },
+  { flag:'saved_village',   after: 4,  text:'那个被救下的村子，逢年过节还会有人来看你。', fx:{ st:{ prestige:3 }, attr:{ xinnian:2 } } },
+  { flag:'obeyed_retreat',  after: 4,  text:'撤离的命令你执行了，但有些夜晚你还是会想起那片水。', fx:{ attr:{ xinnian:-2 } } },
+  { flag:'asked_favor',     after: 6,  text:'老首长临走前为你说的那句话起了作用，也让你在别人眼里多了些议论。', fx:{ st:{ trust:4, prestige:-3 } } },
+  { flag:'tough_area',      after: 8,  text:'高原上的那两年，成了你履历里最硬的一笔。', fx:{ st:{ trust:3 }, attr:{ yizhi:3 } } },
+  { flag:'staff_exp',       after: 6,  text:'机关借调那半年学到的推演方法，后来在演习中救过你一次。', fx:{ dv:{ professional:4 } } },
+  { flag:'gift',            after: 4,  text:'那份"心意"最终还是被人知道了。', fx:{ dv:{ discipline:-6 }, st:{ trust:-5 } } },
+  { flag:'beat_peer',       after: 7,  text:'当年被你顶下去的同年兵，转业前一直没再和你说过话。', fx:{ st:{ morale:-3 } } },
+  { flag:'family_joined',   after: 6,  text:'家属随军以后，你的状态明显稳了下来。', fx:{ st:{ morale:3, family:4 } } }
+];
+
+function fireEchoes(s, queue) {
+  const due = [];
+  s.pendingEchoes = s.pendingEchoes.filter(e => {
+    if (e.at <= s.turnIndex) { due.push(e); return false; }
+    return true;
+  });
+  ECHO_RULES.forEach(r => {
+    if (s.flags[r.flag] && !s.flags['echo_' + r.flag]) {
+      s.flags['echo_' + r.flag] = true;
+      s.pendingEchoes.push({ at: s.turnIndex + r.after, rule: r });
+    }
+  });
+  due.forEach(e => {
+    applyEffects(s, e.rule.fx);
+    pushLog(s, '往事回响', e.rule.text, 'gold');
+    queue.push({ type: 'echo', data: e.rule });
+  });
+}
+
+/* ---------- 任务 ---------- */
+function pickTask(s) {
+  const si = stageIndex(s.stage);
+  const pool = TASKS.filter(t => si >= t.min && si <= t.max);
+  if (!pool.length) return null;
+  if (Math.random() > 0.5) return null;
+
+  let total = 0;
+  pool.forEach(t => total += t.weight);
+  let r = Math.random() * total;
+  for (const t of pool) {
+    r -= t.weight;
+    if (r <= 0) return t;
+  }
+  return pool[pool.length - 1];
+}
+
+/* S 级高级指令带来的加成 */
+function skillSBonus(s, task) {
+  let mul = 1, riskAdd = 0;
+  if (task.layer === '单兵层' && hasS(s, 'sheji')) mul += 0.12;
+  if (task.layer === '战役层' && hasS(s, 'canmou')) mul += 0.08;
+  if (task.layer === '战略层' && hasS(s, 'dongyuan')) mul += 0.10;
+  if (hasS(s, 'daibing')) mul += 0.06;
+  if (hasS(s, 'zhencha')) { mul += 0.10; riskAdd += 0.03; }
+  return { mul: Math.min(mul, 1.2), riskAdd: riskAdd };   // 上限 +20%
+}
+
+/* 部署点：S 级「联合作战指挥」「战时保障」各加 1 点 */
+function taskDeployPoints(s, task) {
+  let n = task.deploy;
+  if (task.layer === '战役层' && hasS(s, 'lianhe')) n += 1;
+  if (task.layer === '战略层' && hasS(s, 'houqin')) n += 1;
+  return n;
+}
+
+/* 创建一次任务推演 */
+function createTaskRun(s, task) {
+  const alloc = {};
+  task.fronts.forEach(f => { alloc[f.key] = 0; });
+  return {
+    task: task,
+    alloc: alloc,
+    left: taskDeployPoints(s, task),
+    reserveUsed: 0,
+    decisions: [],
+    decisionLog: []
+  };
+}
+
+function deployTo(run, key, d) {
+  const f = run.task.fronts.find(x => x.key === key);
+  if (!f) return false;
+  if (d > 0 && run.left <= 0) return false;
+  if (d < 0 && run.alloc[key] <= 0) return false;
+  run.alloc[key] += d;
+  run.left -= d;
+  return true;
+}
+
+function frontFill(run, key) {
+  const f = run.task.fronts.find(x => x.key === key);
+  if (!f) return 0;
+  return Math.min((run.alloc[key] || 0) / f.demand, 1.25);
+}
+
+/* 当前推演的综合预览 */
+function taskPreview(s, run) {
+  const t = run.task;
+  let power = 0;
+  (t.attrs || []).forEach(k => { power += (s.attr[k] - ATTR_BASE) * 0.6; });
+  power += (s.skills[t.skill] || 0) * 4;
+  power += traitBonus(s, t);
+  power += (s.st.morale - 50) * 0.2;
+  power += (s.st.health - 70) * 0.1;
+  power += (s.dv.military - 50) * 0.3;
+  power += (s.st.bond - 30) * 0.1;
+  // 路线加成：任务的关键技能属于本路线的技能分支时，判定更强
+  if (s.route && skillBranchOf(t.skill) === ROUTES[s.route].branch) power += 9;
+
+  let dScore = 0, dRisk = 0;
+  run.decisions.forEach(d => { dScore += d.score || 0; dRisk += d.risk || 0; });
+
+  // 主攻战线的收益是边际递减的（堆满主攻收益有限），保障战线线性削减风险，
+  // 预备队解锁更优的突发选项——三条线各有各的用处，但部署点不够全都要。
+  // 战力系数做了压缩（0.8 + power/150），避免后期无脑拿 S。
+  const mainFill = frontFill(run, 'main');
+  const mainCurve = Math.pow(mainFill, 0.7);
+  const powerFactor = 0.8 + power / 150;
+  const sb = skillSBonus(s, t);
+  const score = 62 * (0.6 + 0.4 * mainCurve) * powerFactor * (1 + dScore) * sb.mul;
+  let risk = Math.max(0, t.risk * (1 - 0.75 * frontFill(run, 'support')) + dRisk + traitRisk(s) + sb.riskAdd);
+  if (hasS(s, 'zuzhi')) risk *= 0.94;
+  return { score: score, power: power, risk: risk, fill: {
+    main: mainFill,
+    support: frontFill(run, 'support'),
+    reserve: frontFill(run, 'reserve')
+  }};
+}
+
+function gradeOf(score) {
+  if (score >= 100) return 'S';
+  if (score >= 86) return 'A';
+  if (score >= 68) return 'B';
+  if (score >= 46) return 'C';
+  return 'D';
+}
+
+const GRADE_MUL = { S: 1.8, A: 1.4, B: 1.0, C: 0.55, D: 0.15 };
+
+/* 结算一次任务推演 */
+function resolveTaskRun(s, run) {
+  const t = run.task;
+  const pv = taskPreview(s, run);
+  const score = pv.score * rnd(0.92, 1.08);
+  const grade = gradeOf(score);
+
+  const merit = Math.round(t.merit * GRADE_MUL[grade]);
+  const spGain = grade === 'S' ? 3 : grade === 'A' ? 2 : grade === 'B' ? 1 : 0;
+
+  const result = {
+    task: t, grade: grade, score: Math.round(score), merit: merit, sp: spGain,
+    prestige: 0, morale: 0, health: 0, injury: null, dead: false,
+    narrative: '', preview: pv, decisions: run.decisionLog.slice()
+  };
+
+  applyEffects(s, { merit: merit, sp: spGain });
+
+  // 成就追踪
+  if (grade === 'S') s.flags.achS = (s.flags.achS || 0) + 1;
+  if (grade === 'D') s.flags.achD = (s.flags.achD || 0) + 1;
+
+  if (grade === 'S') {
+    result.prestige = 4; result.morale = 4;
+    applyEffects(s, { st: { prestige: 4, morale: 4 }, dv: { military: 3 } });
+    result.narrative = '你打得非常漂亮。导调组当场点名表扬，这一仗足够写进你的档案。';
+  } else if (grade === 'A') {
+    result.prestige = 2; result.morale = 2;
+    applyEffects(s, { st: { prestige: 2, morale: 2 }, dv: { military: 2 } });
+    result.narrative = '任务完成得出色，上级对你的评价又高了一层。';
+  } else if (grade === 'B') {
+    applyEffects(s, { st: { morale: 1 } });
+    result.narrative = '任务按计划完成，中规中矩，没有出错。';
+  } else if (grade === 'C') {
+    applyEffects(s, { st: { morale: -2 } });
+    result.morale = -2;
+    result.narrative = '磕磕绊绊地完成了，暴露出不少问题。复盘会上你被点了名。';
+  } else {
+    // S 级「政治动员」：任务失利时的士气损失减半
+    const loss = hasS(s, 'sixiang') ? -2.5 : -5;
+    applyEffects(s, { st: { morale: loss, trust: -3 }, dv: { military: -1 } });
+    result.morale = loss;
+    result.narrative = '任务失利。责任不完全在你，但结果就是结果。' + (hasS(s, 'sixiang') ? '好在平时思想工作做得扎实，队伍没有散。' : '');
+  }
+
+  // 决断附带的额外效果
+  run.decisions.forEach(d => { if (d.fx) applyEffects(s, d.fx); });
+
+  if (t.flag) s.flags[t.flag] = true;
+
+  // 风险判定
+  const risk = pv.risk;
+  if (Math.random() < risk) {
+    const severe = Math.random() < 0.22;
+    const hpLoss = severe ? ri(10, 18) : ri(3, 9);
+    applyEffects(s, { st: { health: -hpLoss, morale: -3 } });
+    s.injuryCount++;
+    result.injury = severe ? '重伤' : '轻伤';
+    result.health = -hpLoss;
+    result.narrative += severe
+      ? ' 你在任务中负了重伤，被紧急后送，休养了很久。'
+      : ' 你在任务中受了点伤，简单包扎后又回到了队伍里。';
+    pushLog(s, t.name, '负伤（' + result.injury + '），健康 −' + hpLoss, 'bad');
+
+    if (severe && s.st.health < 22 && Math.random() < 0.15) {
+      result.dead = true;
+      s.flags.martyr = true;
+      finishCareer(s, '执行任务中牺牲');
+      return result;
+    }
+  }
+
+  pushLog(s, t.name, '评价 ' + grade + '，功勋 +' + merit, grade === 'S' ? 'gold' : grade === 'D' ? 'bad' : 'good');
+  pushHistory(s, t.name, '评价 ' + grade + ' · 功勋 +' + merit, grade === 'S' ? 'gold' : '');
+  return result;
+}
+
+/* 自动部署（供快速推进与模拟器使用）：保障 1 点、预备队 1 点（若够），其余压主攻 */
+function autoDeploy(run) {
+  const has = k => run.task.fronts.some(f => f.key === k);
+  if (has('support')) deployTo(run, 'support', 1);
+  if (has('reserve') && run.task.deploy >= 4) deployTo(run, 'reserve', 1);
+  const mainKey = has('main') ? 'main' : run.task.fronts[0].key;
+  while (run.left > 0) deployTo(run, mainKey, 1);
+  return run;
+}
+
+/* 自动决断：在可承受范围内选收益最高的 */
+function autoDecide(run, decision) {
+  let best = null, bestScore = -99;
+  decision.options.forEach(o => {
+    const need = o.need || 0;
+    if (need > run.alloc.reserve - run.reserveUsed) return;
+    const s = (o.score || 0) - (o.risk || 0) * 1.2;
+    if (s > bestScore) { bestScore = s; best = o; }
+  });
+  if (!best) best = decision.options[0];
+  return best;
+}
+
+/* 一步到位的任务结算（供模拟器使用） */
+function resolveTask(s, task) {
+  const run = autoDeploy(createTaskRun(s, task));
+  (task.decisions || []).forEach(d => {
+    const opt = autoDecide(run, d);
+    run.reserveUsed += (opt.need || 0);
+    run.decisions.push(opt);
+    run.decisionLog.push({ text: d.text, choice: opt.label });
+  });
+  return resolveTaskRun(s, run);
+}
+
+/* ---------- 晋升（加权和 × 门槛阶跃函数 × 位次修正） ---------- */
+function promotionScore(s) {
+  const next = RANKS[s.rankIdx + 1];
+  if (!next) return null;
+  const meritPart = Math.min(s.merit / next.need, 2) * 50;
+  const assessPart = clamp(s.dv.military * 0.4 + s.dv.political * 0.2 + s.dv.professional * 0.4, 0, 110) / 110 * 25;
+  const matchPart = clamp((s.st.prestige * 0.5 + s.st.trust * 0.5), 0, 100) / 100 * 25;
+  const g = discGrade(s.dv.discipline);
+  return {
+    merit: meritPart, assess: assessPart, match: matchPart,
+    total: (meritPart + assessPart + matchPart) * g.mul,
+    grade: g
+  };
+}
+
+/* 同期排名会浮动晋升门槛：位次靠前更容易晋升，靠后更难。
+   生长军官因欠缺基层经历，尉官期及以下的门槛额外高 20%。 */
+function effectiveNeed(s, nextIdx) {
+  const rk = myRank(s);
+  let need = RANKS[nextIdx].need * (0.88 + 0.28 * rk.pct);
+  if (s.flags && s.flags.no_grassroots && nextIdx <= 11) need *= (s.enlistNeedMul || 1.2);
+  return Math.round(need);
+}
+
+function checkPromotion(s) {
+  if (!s.notified) s.notified = {};
+  const nextIdx = s.rankIdx + 1;
+  if (nextIdx >= RANKS.length) return null;
+  const next = RANKS[nextIdx];
+  const cap = STAGES[s.stage].maxRank;
+  if (nextIdx > cap) return null;
+
+  const need = effectiveNeed(s, nextIdx);
+  if (s.merit < need) return null;
+
+  const g = discGrade(s.dv.discipline);
+  if (g.freeze) {
+    if (s.notified[nextIdx + ':disc']) return null;
+    s.notified[nextIdx + ':disc'] = true;
+    return { blocked: true, reason: '作风纪律不合格', from: RANKS[s.rankIdx].name, to: next.name };
+  }
+
+  const gate = RANK_GATES[nextIdx];
+  if (gate) {
+    const miss = [];
+    if (gate.prestige && s.st.prestige < gate.prestige) miss.push('威望 ' + Math.round(s.st.prestige) + '/' + gate.prestige);
+    if (gate.disc && s.dv.discipline < gate.disc) miss.push('作风纪律 ' + Math.round(s.dv.discipline) + '/' + gate.disc);
+    if (gate.heir && (s.heir || 0) < gate.heir) miss.push('培养接班人 ' + (s.heir || 0) + '/' + gate.heir);
+    if (gate.deeds && greatDeeds(s) < gate.deeds) miss.push('重大功勋 ' + greatDeeds(s) + '/' + gate.deeds);
+    // 路线指标要求
+    routeGateMiss(s, nextIdx).forEach(m => miss.push(m));
+    if (miss.length) {
+      if (s.notified[nextIdx + ':gate']) return null;
+      s.notified[nextIdx + ':gate'] = true;
+      return { blocked: true, reason: '尚未达到' + next.name + '的综合条件：' + miss.join('、'), from: RANKS[s.rankIdx].name, to: next.name, gateMiss: miss };
+    }
+  }
+
+  return { blocked: false, from: RANKS[s.rankIdx].name, to: next.name, idx: nextIdx, score: promotionScore(s), need: need };
+}
+
+function applyPromotion(s, pr) {
+  s.rankIdx = pr.idx;
+  s.sp += 2;
+  s.st.prestige = clamp(s.st.prestige + 1.5, 0, 100);
+  s.st.morale = clamp(s.st.morale + 2, 0, 100);
+  pushLog(s, '晋升', '由' + pr.from + '晋升为' + pr.to, 'gold');
+  pushHistory(s, '晋升' + pr.to, '由' + pr.from + '晋升为' + pr.to + '，授' + pr.to + '军衔', 'rank');
+}
+
+/* ---------- 结局 ---------- */
+function finishCareer(s, reason) {
+  if (s.ended) return;
+  s.ended = true;
+  s.endReason = reason;
+  const e = ENDINGS.find(x => x.cond(s));
+  s.ending = e || ENDINGS[ENDINGS.length - 1];
+  pushHistory(s, '生涯结束', reason, 'bad');
+  try { commitAchievements(s); commitLegacy(s); } catch (err) {}
+}
+
+/* ---------- 存档 ---------- */
+const SAVE_KEY = 'jiangxing_zhilu_save_v2';
+function saveGame(s) {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(s)); return true; }
+  catch (e) { return false; }
+}
+function loadGame() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (e) { return null; }
+}
+function clearSave() {
+  try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+}
+
+/* ============================================================
+   成就与传承（跨周目持久化）
+   ============================================================ */
+const ACHV_KEY = 'jiangxing_zhilu_achv_v1';
+const LEGACY_KEY = 'jiangxing_zhilu_legacy_v1';
+
+function loadAchv() {
+  try {
+    const raw = localStorage.getItem(ACHV_KEY);
+    const o = raw ? JSON.parse(raw) : null;
+    return o && o.unlocked ? o : { unlocked: [], runs: 0 };
+  } catch (e) { return { unlocked: [], runs: 0 }; }
+}
+function saveAchv(a) {
+  try { localStorage.setItem(ACHV_KEY, JSON.stringify(a)); } catch (e) {}
+}
+function resetAchv() {
+  try { localStorage.removeItem(ACHV_KEY); localStorage.removeItem(LEGACY_KEY); } catch (e) {}
+}
+
+function evaluateAchievements(s) {
+  const list = [];
+  ACHIEVEMENTS.forEach(a => {
+    let ok = false;
+    try { ok = !!a.cond(s); } catch (e) { ok = false; }
+    if (ok) list.push(a);
+  });
+  return list;
+}
+
+/* 结算时调用：返回本次新解锁的成就 */
+function commitAchievements(s) {
+  const got = evaluateAchievements(s);
+  const store = loadAchv();
+  const fresh = got.filter(a => store.unlocked.indexOf(a.id) < 0);
+  fresh.forEach(a => store.unlocked.push(a.id));
+  store.runs = (store.runs || 0) + 1;
+  saveAchv(store);
+  s.achievements = got.map(a => a.id);
+  s.newAchievements = fresh.map(a => a.id);
+  return fresh;
+}
+
+/* ---------- 传承 ---------- */
+function loadLegacy() {
+  try {
+    const raw = localStorage.getItem(LEGACY_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+function saveLegacy(rec) {
+  try { localStorage.setItem(LEGACY_KEY, JSON.stringify(rec)); } catch (e) {}
+}
+
+/* 生涯结束时写入传承记录，供下一周目继承 */
+function commitLegacy(s) {
+  const prev = loadLegacy();
+  const snap = {
+    name: s.name,
+    rankIdx: s.rankIdx,
+    rankName: RANKS[s.rankIdx].name,
+    merit: Math.round(s.merit),
+    route: s.route,
+    ending: s.ending ? s.ending.name : '',
+    disc: Math.round(s.dv.discipline),
+    heir: s.heir || 0,
+    year: s.serviceYear,
+    flags: s.flags
+  };
+  const rec = {
+    runs: ((prev && prev.runs) || 0) + 1,
+    last: snap,
+    best: (prev && prev.best && prev.best.merit > snap.merit) ? prev.best
+        : { name: snap.name, merit: snap.merit, rankName: snap.rankName }
+  };
+  saveLegacy(rec);
+  return rec;
+}
+
+/* 根据上一世生涯，列出可继承的家训 */
+function availableMottos() {
+  const rec = loadLegacy();
+  if (!rec || !rec.last) return [];
+  const p = rec.last;
+  return MOTTOS.filter(m => {
+    try { return m.cond(p); } catch (e) { return false; }
+  });
+}
+
+/* 上一世生涯摘要 */
+function legacySummary() {
+  const rec = loadLegacy();
+  if (!rec || !rec.last) return null;
+  return rec;
+}
+
+
+/* ============================================================
+   《将星之路》界面层
+   ============================================================ */
+
+let S = null;
+let QUEUE = [];
+let SETUP = null;
+let TASK_RUN = null;
+
+const $ = id => document.getElementById(id);
+const CAT_ORDER = ['机会', '训练', '军事', '政治', '管理', '院校', '生活', '社交'];
+
+/* ================= 军衔肩章 ================= */
+function starPath(cx, cy, r) {
+  const pts = [];
+  for (let i = 0; i < 10; i++) {
+    const ang = -Math.PI / 2 + i * Math.PI / 5;
+    const rr = i % 2 === 0 ? r : r * 0.42;
+    pts.push((cx + rr * Math.cos(ang)).toFixed(1) + ',' + (cy + rr * Math.sin(ang)).toFixed(1));
+  }
+  return 'M' + pts.join('L') + 'Z';
+}
+
+function insigniaSVG(rankIdx, w) {
+  const ins = RANK_INSIGNIA[rankIdx] || RANK_INSIGNIA[0];
+  const W = w || 96, H = 30;
+  const isGold = ins.style === 'gold' || ins.style === 'grand';
+  const bg = isGold ? '#B8912B' : '#46543F';
+  const fg = '#F2EEE2';
+  const n = ins.stars;
+  const cx0 = W / 2 - (n - 1) * 9;
+
+  let marks = '';
+  if (ins.style === 'grand') {
+    // 大元帅：金色底板 + 一枚大星 + 两道金边
+    marks += `<rect x="2" y="2" width="${W - 4}" height="${H - 4}" rx="5" fill="none" stroke="#FFF3C4" stroke-width="1"/>`;
+    marks += `<path d="${starPath(W / 2, H / 2, 9)}" fill="#FFF8E1"/>`;
+    return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="display:block;border-radius:6px"><rect width="${W}" height="${H}" rx="6" fill="${bg}"/>${marks}</svg>`;
+  }
+  if (ins.style === 'star' || ins.style === 'star2') {
+    marks += `<rect x="11" y="6" width="4" height="${H - 12}" rx="1" fill="${fg}"/>`;
+    if (ins.style === 'star2') marks += `<rect x="${W - 15}" y="6" width="4" height="${H - 12}" rx="1" fill="${fg}"/>`;
+  }
+  if (ins.style === 'bar' || ins.style === 'bar4') {
+    marks += `<rect x="10" y="${H / 2 - 2}" width="${W - 20}" height="4" rx="1" fill="${fg}"/>`;
+  }
+  if (ins.style === 'chevr') {
+    marks += `<path d="M${W / 2 - 14} ${H / 2 + 6} L${W / 2} ${H / 2 - 6} L${W / 2 + 14} ${H / 2 + 6}" fill="none" stroke="${fg}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+  for (let i = 0; i < n; i++) {
+    marks += `<path d="${starPath(cx0 + i * 18, H / 2, 6)}" fill="${fg}"/>`;
+  }
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="display:block;border-radius:6px"><rect width="${W}" height="${H}" rx="6" fill="${bg}"/>${marks}</svg>`;
+}
+
+/* ================= 启动 ================= */
+function init() {
+  $('btnSkills').onclick = openSkills;
+  $('btnHistory').onclick = openHistory;
+  $('btnRank').onclick = openRanking;
+  $('btnRoute').onclick = openRoute;
+  $('btnAchv').onclick = openAchv;
+  $('btnNetwork').onclick = openNetwork;
+  $('btnRestart').onclick = () => {
+    if (confirm('确定要放弃当前生涯，重新开始吗？')) { clearSave(); location.reload(); }
+  };
+  const saved = loadGame();
+  if (saved && !saved.ended) {
+    S = saved;
+    if (!S.notified) S.notified = {};
+    if (!S.rivals || !S.rivals.length) initRivals(S);
+    beginTurn(S);
+    renderAll();
+  } else {
+    renderSetup();
+  }
+}
+
+/* ================= 角色创建 ================= */
+function renderSetup() {
+  const mottos = availableMottos();
+  SETUP = { alloc: {}, traits: [], name: '', enlist: 'conscript', motto: mottos.length ? 'm_none' : null };
+  ATTRS.forEach(a => { SETUP.alloc[a.key] = 0; });
+  $('career').innerHTML = '<div class="career-item"><span class="k">状态</span><span class="v">待入伍</span></div>';
+  $('sidebar').innerHTML = '';
+  $('meritWrap').style.visibility = 'hidden';
+  drawSetup();
+}
+
+function setupAllocMax() {
+  const en = ENLIST_TYPES[SETUP.enlist];
+  let n = en.alloc;
+  if (SETUP.motto) {
+    const m = MOTTOS.find(x => x.id === SETUP.motto);
+    if (m && m.alloc) n += m.alloc;
+  }
+  return n;
+}
+
+function drawSetup() {
+  const en = ENLIST_TYPES[SETUP.enlist];
+  const max = setupAllocMax();
+  const used = ATTRS.reduce((n, a) => n + SETUP.alloc[a.key], 0);
+  const left = max - used;
+
+  const enlistCards = Object.keys(ENLIST_TYPES).map(k => {
+    const e = ENLIST_TYPES[k];
+    return `<button class="enlist-card ${SETUP.enlist === k ? 'on' : ''}" onclick="setupEnlist('${k}')">
+      <div class="ec-name">${e.name}</div>
+      <div class="ec-desc">${e.desc}</div>
+      <div class="ec-meta">可分配点数 ${e.alloc}${e.sp ? ' · 初始技能点 ' + e.sp : ''}${e.startRank ? ' · 起始军衔 ' + RANKS[e.startRank].name : ''}</div>
+    </button>`;
+  }).join('');
+
+  const mottos = availableMottos();
+  const rec = legacySummary();
+  const legacyBlock = mottos.length ? `
+    <div class="alloc-head" style="margin-top:22px">
+      <h3>继承家训</h3>
+      <span class="pts">来自${rec.last.name}（${rec.last.rankName} · ${rec.last.ending}）</span>
+    </div>
+    <div class="motto-pick">
+      ${mottos.map(m => `
+        <button class="motto-opt ${SETUP.motto === m.id ? 'on' : ''}" onclick="setupMotto('${m.id}')">
+          <div class="mo-name">${m.name}</div>
+          <div class="mo-desc">${m.desc}</div>
+        </button>`).join('')}
+    </div>` : '';
+
+  const allocRows = ATTRS.map(a => {
+    const v = SETUP.alloc[a.key];
+    const base = ATTR_BASE + v + (en.mods[a.key] || 0);
+    const mod = en.mods[a.key] || 0;
+    return `
+      <div class="alloc-row">
+        <div class="an">${a.name}</div>
+        <div class="ad">${a.desc}${mod ? ` <b style="color:${mod > 0 ? 'var(--olive)' : 'var(--red)'}">(${mod > 0 ? '+' : ''}${mod})</b>` : ''}</div>
+        <div class="alloc-ctrl">
+          <button onclick="setupAlloc('${a.key}',-1)" ${v <= 0 ? 'disabled' : ''}>−</button>
+          <div class="av">${base}</div>
+          <button onclick="setupAlloc('${a.key}',1)" ${(left <= 0 || v >= ATTR_ALLOC_MAX + 4) ? 'disabled' : ''}>+</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  const traitOpts = TRAITS.map(t => `
+    <button class="trait-opt ${SETUP.traits.indexOf(t.key) >= 0 ? 'on' : ''}" onclick="setupTrait('${t.key}')">
+      <div class="t-name">${t.name}</div>
+      <div class="t-desc">${t.desc}</div>
+    </button>`).join('');
+
+  $('main').innerHTML = `
+    <div class="card">
+      <div class="card-head">入伍登记</div>
+      <div class="card-body">
+        <div class="alloc-head"><h3>入伍方式</h3><span class="pts">${en.name}</span></div>
+        <div class="enlist-pick">${enlistCards}</div>
+
+        <div class="setup-name" style="margin-top:20px">
+          <label>姓名</label>
+          <input id="inName" maxlength="8" placeholder="请输入你的名字" value="${SETUP.name.replace(/"/g, '&quot;')}"
+                 oninput="SETUP.name=this.value" />
+        </div>
+
+        <div class="alloc-head"><h3>基础属性分配</h3><span class="pts">剩余 ${left} / ${max} 点</span></div>
+        ${allocRows}
+
+        <div class="alloc-head" style="margin-top:22px">
+          <h3>性格特质（选 3 个）</h3><span class="pts">已选 ${SETUP.traits.length} / 3</span>
+        </div>
+        <div class="trait-pick">${traitOpts}</div>
+        ${legacyBlock}
+
+        <div style="margin-top:24px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <button class="btn primary lg" onclick="startGame()">应征入伍</button>
+          <button class="btn" onclick="setupRandom()">随机分配</button>
+          <span style="font-size:12px;color:var(--text-3)">18 岁入伍，52 个回合，从列兵到上将${rec && rec.runs ? '　·　第 ' + (rec.runs + 1) + ' 周目' : ''}</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+function setupEnlist(k) {
+  SETUP.enlist = k;
+  const max = setupAllocMax();
+  const used = ATTRS.reduce((n, a) => n + SETUP.alloc[a.key], 0);
+  while (used > max) {
+    for (const a of ATTRS) {
+      if (SETUP.alloc[a.key] > 0) { SETUP.alloc[a.key]--; break; }
+    }
+    break;
+  }
+  drawSetup();
+}
+
+function setupMotto(id) {
+  SETUP.motto = SETUP.motto === id ? null : id;
+  drawSetup();
+}
+
+function setupAlloc(key, d) {
+  const used = ATTRS.reduce((n, a) => n + SETUP.alloc[a.key], 0);
+  const max = setupAllocMax();
+  const v = SETUP.alloc[key];
+  if (d > 0 && (used >= max || v >= ATTR_ALLOC_MAX + 4)) return;
+  if (d < 0 && v <= 0) return;
+  SETUP.alloc[key] = v + d;
+  drawSetup();
+}
+function setupTrait(key) {
+  const i = SETUP.traits.indexOf(key);
+  if (i >= 0) SETUP.traits.splice(i, 1);
+  else if (SETUP.traits.length < 3) SETUP.traits.push(key);
+  drawSetup();
+}
+function setupRandom() {
+  const keys = ATTRS.map(a => a.key);
+  ATTRS.forEach(a => { SETUP.alloc[a.key] = 0; });
+  let left = setupAllocMax();
+  while (left > 0) {
+    const k = keys[Math.floor(Math.random() * keys.length)];
+    if (SETUP.alloc[k] < ATTR_ALLOC_MAX + 4) { SETUP.alloc[k]++; left--; }
+  }
+  const pool = TRAITS.map(t => t.key);
+  SETUP.traits = [];
+  while (SETUP.traits.length < 3) {
+    SETUP.traits.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+  }
+  drawSetup();
+}
+
+function startGame() {
+  const name = ($('inName') ? $('inName').value : SETUP.name).trim();
+  if (!name) { alert('请先输入姓名'); return; }
+  if (SETUP.traits.length !== 3) { alert('请选择 3 个性格特质'); return; }
+  const used = ATTRS.reduce((n, a) => n + SETUP.alloc[a.key], 0);
+  if (used < setupAllocMax()) { alert('还有 ' + (setupAllocMax() - used) + ' 点属性未分配'); return; }
+
+  const rec = legacySummary();
+  S = newGame(name, SETUP.alloc, SETUP.traits, {
+    enlist: SETUP.enlist,
+    motto: SETUP.motto,
+    legacy: !!(rec && rec.runs),
+    prename: rec && rec.last ? rec.last.name : ''
+  });
+  $('meritWrap').style.visibility = 'visible';
+  beginTurn(S);
+  saveGame(S);
+  renderAll();
+}
+
+/* ================= 渲染 ================= */
+function renderAll() {
+  renderTop();
+  renderSidebar();
+  renderMain();
+}
+
+function renderTop() {
+  const rank = RANKS[S.rankIdx];
+  const st = STAGES[S.stage];
+  const rk = myRank(S);
+  const route = S.route ? ROUTES[S.route] : null;
+  const en = ENLIST_TYPES[S.enlist] || ENLIST_TYPES.conscript;
+  const motto = S.mottoId ? MOTTOS.find(m => m.id === S.mottoId) : null;
+  $('career').innerHTML = `
+    <div class="career-item"><span class="k">姓名</span><span class="v">${S.name}${motto ? ` <span class="mini-tag">${motto.name}</span>` : ''}</span></div>
+    <div class="career-item"><span class="k">出身</span><span class="v">${en.short}</span></div>
+    <div class="career-item"><span class="k">军衔</span><span class="v rank">${rank.name}</span></div>
+    <div class="career-item"><span class="k">年龄</span><span class="v">${S.age} 岁</span></div>
+    <div class="career-item"><span class="k">阶段</span><span class="v">${st.name}</span></div>
+    ${route
+      ? `<div class="career-item"><span class="k">路线</span><span class="v" style="color:${route.color}">${route.short}</span></div>`
+      : `<div class="career-item"><span class="k">路线</span><span class="v" style="color:var(--text-3)">未定</span></div>`}
+    <div class="career-item"><span class="k">同期位次</span><span class="v ${rk.pos <= 2 ? 'good' : rk.pos >= 7 ? 'bad' : ''}">第 ${rk.pos} / ${rk.total}</span></div>
+    <div class="insignia">${insigniaSVG(S.rankIdx, 84)}</div>`;
+
+  const next = RANKS[S.rankIdx + 1];
+  const capReached = next && (S.rankIdx + 1) > st.maxRank;
+  let pct = 100, label = '已达最高军衔';
+
+  if (next && !capReached) {
+    const need = effectiveNeed(S, S.rankIdx + 1);
+    const cur = rank.need;
+    pct = clamp((S.merit - cur) / (need - cur) * 100, 0, 100);
+    label = `距 ${next.name} 还需 ${Math.max(0, Math.ceil(need - S.merit))} 功勋`;
+    if (need !== next.need) {
+      label += rk.pos <= 3 ? '（位次靠前，门槛已下调）' : rk.pos >= 6 ? '（位次偏后，门槛已上调）' : '';
+    }
+    if (S.merit >= need) {
+      const gate = RANK_GATES[S.rankIdx + 1];
+      const miss = [];
+      if (gate) {
+        if (gate.prestige && S.st.prestige < gate.prestige) miss.push(`威望 ${Math.round(S.st.prestige)}/${gate.prestige}`);
+        if (gate.disc && S.dv.discipline < gate.disc) miss.push(`纪律 ${Math.round(S.dv.discipline)}/${gate.disc}`);
+        if (gate.heir && (S.heir || 0) < gate.heir) miss.push(`接班人 ${S.heir || 0}/${gate.heir}`);
+        if (gate.deeds && greatDeeds(S) < gate.deeds) miss.push(`重大功勋 ${greatDeeds(S)}/${gate.deeds}`);
+      }
+      if (discGrade(S.dv.discipline).freeze) miss.push('作风纪律不合格');
+      routeGateMiss(S, S.rankIdx + 1).forEach(m => miss.push(m));
+      label = miss.length ? `功勋已达标，尚缺：${miss.join(' · ')}` : `${next.name} 条件已满足，等待授衔`;
+    }
+  } else if (next && capReached) {
+    label = `本阶段最高军衔为 ${RANKS[st.maxRank].name}，功勋继续累积`;
+    pct = 100;
+  }
+  $('meritFill').style.width = pct + '%';
+  $('meritLabel').innerHTML = `<span>功勋 ${Math.round(S.merit)}</span><span>${label}</span>`;
+}
+
+function bar(name, val, max, cls, hint) {
+  const pct = clamp(val / max * 100, 0, 100);
+  return `
+    <div class="stat-row">
+      <div class="stat-top"><span class="name">${name}</span><span class="val">${Math.round(val)}</span></div>
+      <div class="stat-track"><div class="stat-fill ${cls}" style="width:${pct}%"></div></div>
+      ${hint ? `<div class="stat-hint">${hint}</div>` : ''}
+    </div>`;
+}
+
+function renderSidebar() {
+  const g = discGrade(S.dv.discipline);
+  const attrHTML = ATTRS.map(a => bar(a.name, S.attr[a.key], 110, 'attr', '')).join('');
+  const dvHTML = DERIVED.map(d => bar(d.name, S.dv[d.key], 110, 'derived', '')).join('')
+    + bar('作风纪律', S.dv.discipline, 110, 'disc', `当前等级：<b>${g.name}</b>`);
+  const stHTML = [
+    bar('士气', S.st.morale, 100, 'morale'),
+    bar('健康', S.st.health, 100, 'health'),
+    bar('威望', S.st.prestige, 100, 'prestige'),
+    bar('首长信任', S.st.trust, 100, 'trust'),
+    bar('搭档默契', S.st.bond, 100, 'bond'),
+    bar('家庭', S.st.family, 100, 'family')
+  ].join('');
+  const traitHTML = S.traits.map(k => {
+    const t = TRAIT_MAP[k];
+    return `<span class="trait-chip" title="${t.desc}">${t.name}</span>`;
+  }).join('');
+
+  $('sidebar').innerHTML = `
+    <div class="card">
+      <div class="card-head"><span>基础属性</span><span>上限 110</span></div>
+      <div class="card-body">${attrHTML}</div>
+    </div>
+    <div class="card">
+      <div class="card-head"><span>派生指标</span></div>
+      <div class="card-body">${dvHTML}</div>
+    </div>
+    <div class="card">
+      <div class="card-head"><span>状态</span></div>
+      <div class="card-body">${stHTML}</div>
+    </div>
+    <div class="card">
+      <div class="card-head"><span>性格特质</span><span>技能点 ${S.sp}</span></div>
+      <div class="card-body"><div class="trait-list">${traitHTML}</div></div>
+    </div>`;
+}
+
+function renderMain() {
+  const st = STAGES[S.stage];
+  const t = currentTurn(S) || { label: '第 ' + S.year + ' 年', year: S.year };
+  const acts = availableActions(S);
+  const rk = myRank(S);
+
+  const groups = {};
+  acts.forEach(a => { (groups[a.cat] = groups[a.cat] || []).push(a); });
+
+  const groupsHTML = CAT_ORDER.filter(c => groups[c]).map(c => `
+    <div>
+      <div class="action-group-title">${c}${c === '机会' ? ' · 本回合限定，过期作废' : ''}</div>
+      <div class="action-grid">
+        ${groups[c].map(a => {
+          const used = S.usedActions[a.id] || 0;
+          const lim = c === '机会' ? 1 : 2;
+          const dis = S.ap < a.ap || used >= lim;
+          return `
+            <button class="action ${c === '机会' ? 'opp' : ''}" ${dis ? 'disabled' : ''} onclick="onAction('${a.id}')">
+              <div class="a-top"><span class="a-name">${a.name}</span><span class="a-ap">${a.ap} AP</span></div>
+              <div class="a-desc">${describeFx(a.fx, ACTION_SCALE)}</div>
+              ${used ? `<span class="a-count">×${used}</span>` : ''}
+            </button>`;
+        }).join('')}
+      </div>
+    </div>`).join('');
+
+  const pips = Array.from({ length: S.apMax }, (_, i) => `<span class="ap-pip ${i < S.ap ? 'on' : ''}"></span>`).join('');
+
+  $('main').innerHTML = `
+    <div class="card">
+      <div class="card-body">
+        <div class="turn-head">
+          <div>
+            <div class="turn-title">${t.label} · <span class="stage">${st.name}</span></div>
+            <div class="turn-sub">${st.desc}</div>
+          </div>
+          <div class="ap-box">
+            <span class="ap-num">行动点</span>
+            <div class="ap-pips">${pips}</div>
+            <span class="ap-num">${S.ap} / ${S.apMax}</span>
+            <button class="btn" onclick="onAutoArrange()">自动安排</button>
+            <button class="btn primary" onclick="onEndTurn()">结束回合</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span>本回合安排</span>
+        <span>重复同一行动效果递减 · 同期位次 第 ${rk.pos}/${rk.total}</span>
+      </div>
+      <div class="card-body"><div class="action-groups">${groupsHTML}</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span>生涯日志</span><span>共 ${S.log.length} 条</span></div>
+      <div class="card-body">
+        <div class="log-list">
+          ${S.log.slice(0, 40).map(l => `
+            <div class="log-item ${l.kind}">
+              <span class="ly">第${l.year}年</span>
+              <span><b>${l.title}</b> · ${l.text}</span>
+            </div>`).join('') || '<div class="empty">还没有记录。</div>'}
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ================= 行动 ================= */
+function onAction(id) {
+  const r = doAction(S, id);
+  if (!r.ok) return;
+  renderTop(); renderSidebar(); renderMain();
+}
+function onAutoArrange() {
+  autoSpendAP(S);
+  renderTop(); renderSidebar(); renderMain();
+}
+function onEndTurn() {
+  const res = finishTurn(S);
+  QUEUE = res.queue || [];
+  saveGame(S);
+  if (res.finished) { showEnding(); return; }
+  processQueue();
+}
+
+/* ================= 队列 ================= */
+function processQueue() {
+  if (S.ended) { showEnding(); return; }
+  if (QUEUE.length === 0) {
+    beginTurn(S);
+    saveGame(S);
+    renderAll();
+    return;
+  }
+  const item = QUEUE.shift();
+  if (item.type === 'stage') showStage(item.data);
+  else if (item.type === 'echo') showEcho(item.data);
+  else if (item.type === 'route') showRouteChoice();
+  else if (item.type === 'event') showEvent(item.data);
+  else if (item.type === 'task') showTask(item.data);
+  else if (item.type === 'promotion') showPromotion(item.data);
+  else processQueue();
+}
+
+/* ================= 成长路线 ================= */
+function routeCards() {
+  return Object.keys(ROUTES).map(k => {
+    const r = ROUTES[k];
+    const branch = SKILL_BRANCHES.find(b => b.key === r.branch);
+    const acts = ROUTE_ACTIONS.filter(a => a.route === k).map(a => a.name).join(' · ');
+    return `
+      <button class="route-card" style="border-left-color:${r.color}" onclick="onChooseRoute('${k}')">
+        <div class="rc-head">
+          <span class="rc-name">${r.name}</span>
+          <span class="rc-tag">核心指标：${r.statName} · ${r.extraName}</span>
+        </div>
+        <div class="rc-desc">${r.desc}</div>
+        <div class="rc-line"><b>专属行动</b>${acts}</div>
+        <div class="rc-line"><b>技能折扣</b>${branch ? branch.name : ''} 升级消耗 −1 点</div>
+        <div class="rc-line"><b>任务加成</b>关键技能属于本路线时判定 +9</div>
+        <div class="rc-line"><b>晋升要求</b>少将起需 ${r.statName} ≥ ${r.gateNeeds[0]}、${r.extraName} ≥ ${r.extraNeeds[0]}</div>
+        <div class="rc-motto">「${r.motto}」</div>
+      </button>`;
+  }).join('');
+}
+
+function showRouteChoice() {
+  openModal(`
+    <div class="modal-head">
+      <div class="kicker">生涯抉择 · 第 ${S.year} 年</div>
+      <h2>选择你的成长路线</h2>
+    </div>
+    <div class="modal-body">
+      <div class="narrative">你从军士成长为军官，接下来要走哪条路，将决定后面三十年的方向。<b>主干一旦定下就基本锁定</b>——中途转线的代价很大。</div>
+      <div class="route-list">${routeCards()}</div>
+    </div>`, true);
+}
+
+function onChooseRoute(key) {
+  chooseRoute(S, key);
+  closeModal();
+  saveGame(S);
+  renderAll();
+  processQueue();
+}
+
+function openRoute() {
+  if (!S.route) {
+    openModal(`
+      <div class="modal-head"><div class="kicker">成长路线</div><h2>尚未选定路线</h2></div>
+      <div class="modal-body"><div class="narrative">进入尉官期后会面临路线抉择。</div></div>
+      <div class="modal-foot"><button class="btn primary" onclick="closeModal()">关闭</button></div>`);
+    return;
+  }
+  const r = ROUTES[S.route];
+  const branch = SKILL_BRANCHES.find(b => b.key === r.branch);
+  const acts = ROUTE_ACTIONS.filter(a => a.route === S.route).map(a => a.name).join(' · ');
+  const canSwitch = !S.routeSwitched && S.merit >= ROUTE_SWITCH_COST.merit;
+  const others = Object.keys(ROUTES).filter(k => k !== S.route).map(k => {
+    const o = ROUTES[k];
+    return `<button class="route-switch" ${canSwitch ? '' : 'disabled'} onclick="onSwitchRoute('${k}')">
+      <span class="rs-name" style="color:${o.color}">转为${o.name}</span>
+      <span class="rs-cost">代价：功勋 −${ROUTE_SWITCH_COST.merit} · 威望 −${ROUTE_SWITCH_COST.prestige}</span>
+    </button>`;
+  }).join('');
+
+  const tierNames = ['少将', '中将', '上将'];
+  const gateRows = tierNames.map((n, i) => `
+    <div class="route-gate">
+      <span class="rg-rank">${n}</span>
+      <span class="rg-need">${r.statName} ≥ ${r.gateNeeds[i]}</span>
+      <span class="rg-need">${r.extraName} ≥ ${r.extraNeeds[i]}</span>
+    </div>`).join('');
+
+  openModal(`
+    <div class="modal-head"><div class="kicker">成长路线</div><h2>${r.name}</h2></div>
+    <div class="modal-body">
+      <div class="narrative">${r.desc}<br>「${r.motto}」</div>
+      <div class="route-meta">
+        <div class="rm-row"><b>专属行动</b><span>${acts}</span></div>
+        <div class="rm-row"><b>技能折扣</b><span>${branch ? branch.name : ''} 升级消耗 −1 点</span></div>
+        <div class="rm-row"><b>任务加成</b><span>关键技能属于本路线时判定 +9</span></div>
+      </div>
+      <h3 style="font-size:13px;margin:18px 0 10px">晋升指标要求</h3>
+      <div class="route-gates">${gateRows}</div>
+      ${S.routeSwitched
+        ? '<div class="hint-line">你已经转过一次线，不能再转了。</div>'
+        : `<h3 style="font-size:13px;margin:18px 0 10px">转线（全生涯仅一次）</h3><div class="route-switch-list">${others}</div>`}
+    </div>
+    <div class="modal-foot"><button class="btn primary" onclick="closeModal()">关闭</button></div>`, true);
+}
+
+function onSwitchRoute(key) {
+  const r = switchRoute(S, key);
+  if (!r.ok) { alert(r.reason || '无法转线'); return; }
+  saveGame(S);
+  openRoute();
+  renderAll();
+}
+
+/* ================= 弹窗基础 ================= */
+function openModal(html, wide) {
+  $('modalRoot').innerHTML = `<div class="overlay"><div class="modal ${wide ? 'wide' : ''}">${html}</div></div>`;
+}
+function closeModal() { $('modalRoot').innerHTML = ''; }
+
+function rewardChips(changes) {
+  if (!changes || !changes.length) return '';
+  return changes.filter(c => Math.abs(c.v) >= 0.5).map(c => {
+    const v = Math.round(c.v);
+    const cls = c.label === '功勋' && v > 0 ? 'gold' : v < 0 ? 'bad' : '';
+    return `<span class="reward ${cls}">${c.label} ${v > 0 ? '+' : ''}${v}</span>`;
+  }).join('');
+}
+
+/* ================= 阶段推进 ================= */
+function showStage(st) {
+  openModal(`
+    <div class="modal-head"><div class="kicker">阶段推进</div><h2>${st.name}</h2></div>
+    <div class="modal-body">
+      <div class="narrative">${st.desc}</div>
+      <div class="reward-list">
+        <span class="reward">每回合行动点 ${st.ap}</span>
+        <span class="reward">时间粒度：${st.turnLabel}</span>
+        <span class="reward gold">最高军衔：${RANKS[st.maxRank].name}</span>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn primary" onclick="closeModal();processQueue()">继续</button></div>`);
+}
+
+/* ================= 回响 ================= */
+function showEcho(rule) {
+  const chips = [];
+  const fx = rule.fx || {};
+  ['attr', 'dv', 'st'].forEach(g => {
+    if (!fx[g]) return;
+    Object.keys(fx[g]).forEach(k => {
+      const name = g === 'attr' ? ATTR_NAME[k] : g === 'dv' ? DV_NAME[k] : ST_NAME[k];
+      chips.push({ label: name || k, v: fx[g][k] });
+    });
+  });
+  openModal(`
+    <div class="modal-head"><div class="kicker">往事回响</div><h2>因果</h2></div>
+    <div class="modal-body">
+      <div class="narrative">${rule.text}</div>
+      <div class="reward-list">${rewardChips(chips) || '<span class="reward">没有立即显现的变化</span>'}</div>
+    </div>
+    <div class="modal-foot"><button class="btn primary" onclick="closeModal();processQueue()">继续</button></div>`);
+}
+
+/* ================= 成就 ================= */
+function openAchv() {
+  const store = loadAchv();
+  const got = store.unlocked || [];
+  const rows = ACHIEVEMENTS.map(a => {
+    const on = got.indexOf(a.id) >= 0;
+    return `<div class="achv-row ${on ? 'on' : ''}">
+      <span class="ar-mark">${on ? '★' : '☆'}</span>
+      <span class="ar-name">${a.name}</span>
+      <span class="ar-desc">${on ? a.desc : '？？？'}</span>
+    </div>`;
+  }).join('');
+  openModal(`
+    <div class="modal-head">
+      <div class="kicker">成就</div>
+      <h2>已解锁 ${got.length} / ${ACHIEVEMENTS.length}　·　已进行 ${store.runs || 0} 周目</h2>
+    </div>
+    <div class="modal-body">
+      <div class="achv-list">${rows}</div>
+      <div class="hint-line">成就会跨周目累积保存。想清空记录请点下方按钮。</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="onResetAchv()">清空成就与传承</button>
+      <button class="btn primary" onclick="closeModal()">关闭</button>
+    </div>`, true);
+}
+
+function onResetAchv() {
+  if (!confirm('确定要清空所有成就与传承记录吗？此操作不可撤销。')) return;
+  resetAchv();
+  closeModal();
+}
+
+/* ================= 事件 ================= */
+function showEvent(ev) {
+  const opts = ev.options.map((o, i) => `
+    <button class="opt ${o.risky ? 'risky' : ''}" onclick="onEventOption(${i})">
+      <div class="o-label">${o.label}</div>
+      <div class="o-hint">${o.hint || ''}</div>
+    </button>`).join('');
+  openModal(`
+    <div class="modal-head">
+      <div class="kicker">抉择 · 第 ${S.year} 年${ev.chained ? ' · 后续' : ''}${ev.legacyOnly ? ' · 家风' : ''}</div>
+      <h2>${ev.title}</h2>
+    </div>
+    <div class="modal-body">
+      <div class="narrative">${fillNames(S, ev.text)}</div>
+      ${opts}
+      <div class="hint-line">提示：括号内为可预期的显性收益与代价；隐藏后果由你的信念、性格与口碑决定。</div>
+    </div>`);
+  window.__curEvent = ev;
+}
+
+function onEventOption(i) {
+  const ev = window.__curEvent;
+  const opt = ev.options[i];
+  const r = applyOption(S, ev, opt);
+  const all = r.changes.concat(r.hiddenChanges || []);
+  openModal(`
+    <div class="modal-head"><div class="kicker">结果</div><h2>${ev.title}</h2></div>
+    <div class="modal-body">
+      <div class="narrative">${r.hiddenNote ? '事情没有按你想的方向走——' + r.hiddenNote + '。' : '你的选择已经做出，结果随之而来。'}</div>
+      <div class="reward-list">${rewardChips(all) || '<span class="reward">没有立即显现的变化</span>'}</div>
+    </div>
+    <div class="modal-foot"><button class="btn primary" onclick="closeModal();processQueue()">继续</button></div>`);
+  saveGame(S);
+}
+
+/* ================= 任务推演 ================= */
+function showTask(task) {
+  TASK_RUN = createTaskRun(S, task);
+  renderDeploy();
+}
+
+function renderDeploy() {
+  const run = TASK_RUN, t = run.task;
+  const pv = taskPreview(S, run);
+  const grade = gradeOf(pv.score);
+
+  const rows = t.fronts.map(f => {
+    const alloc = run.alloc[f.key];
+    const fill = Math.min(alloc / f.demand, 1.25);
+    const pct = Math.min(fill / 1.25 * 100, 100);
+    const full = fill >= 1;
+    return `
+      <div class="front">
+        <div class="front-top">
+          <div>
+            <div class="front-name">${f.name}</div>
+            <div class="front-hint">${f.hint} · 需求 ${f.demand}</div>
+          </div>
+          <div class="alloc-ctrl">
+            <button onclick="taskDeploy('${f.key}',-1)" ${alloc <= 0 ? 'disabled' : ''}>−</button>
+            <div class="av">${alloc}</div>
+            <button onclick="taskDeploy('${f.key}',1)" ${run.left <= 0 ? 'disabled' : ''}>+</button>
+          </div>
+        </div>
+        <div class="front-track"><div class="front-fill ${full ? 'full' : ''}" style="width:${pct}%"></div></div>
+      </div>`;
+  }).join('');
+
+  openModal(`
+    <div class="modal-head">
+      <div class="kicker">${t.layer} · 第 ${S.year} 年 · 第一步 战前部署</div>
+      <h2>${t.name}</h2>
+    </div>
+    <div class="modal-body">
+      <div class="narrative">${t.brief || t.text}</div>
+      <div class="deploy-bar">
+        <span>剩余部署点</span>
+        <span class="deploy-left">${run.left}</span>
+        <span class="deploy-total">/ ${t.deploy}</span>
+      </div>
+      <div class="fronts">${rows}</div>
+      <div class="preview">
+        <div class="preview-item"><span class="pk">预计评价</span><span class="pv grade-${grade}">${grade}</span></div>
+        <div class="preview-item"><span class="pk">综合风险</span><span class="pv">${Math.round(pv.risk * 100)}%</span></div>
+        <div class="preview-item"><span class="pk">战力系数</span><span class="pv">×${(1 + pv.power / 100).toFixed(2)}</span></div>
+      </div>
+      <div class="hint-line">主攻决定评价高低，保障降低伤亡风险，预备队解锁突发情况的选项——但部署点不够全都要。</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="taskAuto()">自动部署</button>
+      <button class="btn primary" onclick="taskGoDecide()" ${run.left > 0 ? 'disabled' : ''}>
+        ${run.left > 0 ? '还有 ' + run.left + ' 点未分配' : '进入任务'}
+      </button>
+    </div>`, true);
+}
+
+function taskDeploy(key, d) {
+  deployTo(TASK_RUN, key, d);
+  renderDeploy();
+}
+function taskAuto() {
+  while (TASK_RUN.left > 0) {
+    if (!autoDeployStep(TASK_RUN)) break;
+  }
+  renderDeploy();
+}
+function autoDeployStep(run) {
+  const has = k => run.task.fronts.some(f => f.key === k);
+  if (has('support') && run.alloc.support < 1) return deployTo(run, 'support', 1);
+  if (has('reserve') && run.task.deploy >= 4 && run.alloc.reserve < 1) return deployTo(run, 'reserve', 1);
+  const mainKey = has('main') ? 'main' : run.task.fronts[0].key;
+  return deployTo(run, mainKey, 1);
+}
+
+function taskGoDecide() {
+  TASK_RUN.decisionIndex = 0;
+  renderDecision();
+}
+
+function renderDecision() {
+  const run = TASK_RUN;
+  const list = run.task.decisions || [];
+  const i = run.decisionIndex;
+  if (i >= list.length) { settleTask(); return; }
+  const d = list[i];
+  const reserveAvail = run.alloc.reserve - run.reserveUsed;
+
+  const opts = d.options.map((o, oi) => {
+    const need = o.need || 0;
+    const ok = need <= reserveAvail;
+    return `
+      <button class="opt ${o.risk ? 'risky' : ''}" ${ok ? '' : 'disabled'} onclick="taskChoose(${oi})">
+        <div class="o-label">${o.label}${need ? `　<span class="need-tag ${ok ? '' : 'no'}">需预备队 ${need}</span>` : ''}</div>
+        <div class="o-hint">${o.hint || ''}</div>
+      </button>`;
+  }).join('');
+
+  openModal(`
+    <div class="modal-head">
+      <div class="kicker">${run.task.layer} · 第二步 临机决断（${i + 1}/${list.length}）</div>
+      <h2>${run.task.name}</h2>
+    </div>
+    <div class="modal-body">
+      <div class="narrative">${d.text}</div>
+      ${opts}
+      <div class="hint-line">你当前可用的预备队：${Math.max(0, reserveAvail)} 点。</div>
+    </div>`, true);
+}
+
+function taskChoose(oi) {
+  const run = TASK_RUN;
+  const d = run.task.decisions[run.decisionIndex];
+  const opt = d.options[oi];
+  run.reserveUsed += (opt.need || 0);
+  run.decisions.push(opt);
+  run.decisionLog.push({ text: d.text, choice: opt.label });
+  run.decisionIndex++;
+  renderDecision();
+}
+
+function settleTask() {
+  const r = resolveTaskRun(S, TASK_RUN);
+  const chips = [];
+  chips.push({ label: '功勋', v: r.merit });
+  if (r.sp) chips.push({ label: '技能点', v: r.sp });
+  if (r.prestige) chips.push({ label: '威望', v: r.prestige });
+  if (r.morale) chips.push({ label: '士气', v: r.morale });
+  if (r.health) chips.push({ label: '健康', v: r.health });
+
+  const frontBars = TASK_RUN.task.fronts.map(f => {
+    const fill = Math.min(TASK_RUN.alloc[f.key] / f.demand, 1.25);
+    const pct = Math.min(fill / 1.25 * 100, 100);
+    return `
+      <div class="front-mini">
+        <span class="fm-name">${f.name}</span>
+        <div class="front-track"><div class="front-fill ${fill >= 1 ? 'full' : ''}" style="width:${pct}%"></div></div>
+        <span class="fm-val">${Math.round(fill * 100)}%</span>
+      </div>`;
+  }).join('');
+
+  const decList = TASK_RUN.decisionLog.map(d =>
+    `<div class="dec-item"><div class="dec-q">${d.text}</div><div class="dec-a">→ ${d.choice}</div></div>`).join('');
+
+  openModal(`
+    <div class="modal-head">
+      <div class="kicker">${TASK_RUN.task.layer} · 第三步 结算</div>
+      <h2>${TASK_RUN.task.name}</h2>
+    </div>
+    <div class="modal-body">
+      <div class="result-head">
+        <div class="grade-badge grade-${r.grade} pop">${r.grade}</div>
+        <div class="r-text">
+          <h3>${gradeTitle(r.grade)}</h3>
+          <p>综合评分 ${r.score}${r.injury ? ' · 任务中负伤：' + r.injury : ''}</p>
+        </div>
+      </div>
+      <div class="fronts-mini">${frontBars}</div>
+      ${decList ? `<div class="dec-block"><div class="dec-title">决断回顾</div>${decList}</div>` : ''}
+      <div class="narrative">${r.narrative}</div>
+      <div class="reward-list">${rewardChips(chips)}</div>
+    </div>
+    <div class="modal-foot"><button class="btn primary" onclick="closeModal();processQueue()">继续</button></div>`, true);
+  saveGame(S);
+}
+
+function gradeTitle(g) {
+  return { S: '出色完成', A: '表现优秀', B: '顺利完成', C: '勉强完成', D: '任务失利' }[g] || '任务结束';
+}
+
+/* ================= 晋升 ================= */
+function showPromotion(pr) {
+  if (pr.blocked) {
+    openModal(`
+      <div class="modal-head"><div class="kicker">晋升评定</div><h2>晋升暂缓</h2></div>
+      <div class="modal-body">
+        <div class="narrative">${pr.reason}。功勋已经够了，但门槛没过去。</div>
+        <div class="reward-list"><span class="reward bad">当前纪律等级：${discGrade(S.dv.discipline).name}</span></div>
+      </div>
+      <div class="modal-foot"><button class="btn primary" onclick="closeModal();processQueue()">继续</button></div>`);
+    pushLog(S, '晋升受阻', pr.reason, 'bad');
+    saveGame(S);
+    return;
+  }
+  applyPromotion(S, pr);
+  const sc = pr.score;
+  const rk = myRank(S);
+  openModal(`
+    <div class="modal-head"><div class="kicker">授衔仪式</div><h2>晋升 ${pr.to}</h2></div>
+    <div class="modal-body">
+      <div class="promo-art">${insigniaSVG(pr.idx, 150)}</div>
+      <div class="narrative">你站在队列前，肩章被换上新的。${pr.from}的肩章收进了箱子，那是你走了很多年才走到的位置。</div>
+      <div class="summary-grid">
+        <div class="summary-cell"><div class="sc-k">实绩功勋</div><div class="sc-v">${sc.merit.toFixed(0)}</div></div>
+        <div class="summary-cell"><div class="sc-k">考核评定</div><div class="sc-v">${sc.assess.toFixed(0)}</div></div>
+        <div class="summary-cell"><div class="sc-k">任职匹配</div><div class="sc-v">${sc.match.toFixed(0)}</div></div>
+        <div class="summary-cell"><div class="sc-k">纪律系数</div><div class="sc-v">×${sc.grade.mul.toFixed(2)}</div></div>
+      </div>
+      <div class="reward-list">
+        <span class="reward gold">技能点 +2</span>
+        <span class="reward">威望 +2</span>
+        <span class="reward">士气 +2</span>
+        <span class="reward">同期位次 第 ${rk.pos}/${rk.total}</span>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn primary" onclick="closeModal();processQueue()">继续</button></div>`, true);
+  saveGame(S);
+}
+
+/* ================= 关系网 ================= */
+function affinityText(v) {
+  if (v >= 80) return '生死之交';
+  if (v >= 65) return '信任';
+  if (v >= 45) return '熟悉';
+  if (v >= 25) return '疏远';
+  return '交恶';
+}
+
+function openNetwork() {
+  if (!S.npcs || !S.npcs.length) {
+    openModal(`
+      <div class="modal-head"><div class="kicker">关系网</div><h2>尚未结识人物</h2></div>
+      <div class="modal-foot"><button class="btn primary" onclick="closeModal()">关闭</button></div>`);
+    return;
+  }
+  const groups = ['chief','partner','comrade','subordinate'].map(role => {
+    const meta = NPC_ROLES[role];
+    const list = npcByRole(S, role);
+    return `
+      <div class="npc-group">
+        <div class="npc-group-head"><span>${meta.name}</span><span>${meta.desc}</span></div>
+        ${list.map(n => `
+          <div class="npc-row">
+            <div class="npc-avatar">${n.name.charAt(0)}</div>
+            <div class="npc-main">
+              <div class="npc-name">${n.name} <span>${n.tag}</span></div>
+              <div class="npc-rel">${affinityText(n.affinity)} · 好感 ${Math.round(n.affinity)}</div>
+              <div class="npc-track"><div style="width:${clamp(n.affinity,0,100)}%"></div></div>
+            </div>
+            ${role === 'subordinate'
+              ? `<div class="npc-growth"><span>成长</span><b>${Math.round(n.growth || 0)}</b>${n.graduated ? '<em>已提干</em>' : ''}</div>`
+              : `<div class="npc-growth"><span>关系</span><b>${affinityText(n.affinity)}</b></div>`}
+          </div>`).join('') || '<div class="empty">暂无</div>'}
+      </div>`;
+  }).join('');
+  openModal(`
+    <div class="modal-head">
+      <div class="kicker">军旅关系网</div>
+      <h2>${S.name}认识的人</h2>
+    </div>
+    <div class="modal-body">
+      <div class="hint-line" style="margin-bottom:14px">行动会作用到具体的人：联络首长、同侪交流、谈心谈话、双主官协作都会改变对应人物的关系。他们也会升迁、转业、立功和出事。</div>
+      <div class="npc-groups">${groups}</div>
+    </div>
+    <div class="modal-foot"><button class="btn primary" onclick="closeModal()">关闭</button></div>`, true);
+}
+
+/* ================= 同期排名 ================= */
+function openRanking() {
+  const rk = myRank(S);
+  const rows = S.rivals.map(r => ({ name: r.name, tag: r.tag, merit: r.merit, me: false }))
+    .concat([{ name: S.name, tag: '你', merit: S.merit, me: true }])
+    .sort((a, b) => b.merit - a.merit)
+    .map((r, i) => `
+      <div class="rank-row ${r.me ? 'me' : ''}">
+        <span class="rk-pos">${i + 1}</span>
+        <span class="rk-name">${r.name}</span>
+        <span class="rk-tag">${r.tag}</span>
+        <span class="rk-rank">${RANKS[rivalRankIdx(r.merit)].name}</span>
+        <span class="rk-merit">${Math.round(r.merit)}</span>
+      </div>`).join('');
+
+  openModal(`
+    <div class="modal-head">
+      <div class="kicker">同期竞争</div>
+      <h2>你目前排在第 ${rk.pos} 位（共 ${rk.total} 人）</h2>
+    </div>
+    <div class="modal-body">
+      <div class="hint-line" style="margin-bottom:14px">
+        位次直接影响晋升门槛：排名越靠前，所需功勋越低；越靠后，门槛越高。
+      </div>
+      <div class="rank-list">${rows}</div>
+    </div>
+    <div class="modal-foot"><button class="btn primary" onclick="closeModal()">关闭</button></div>`);
+}
+
+/* ================= 技能树 ================= */
+function openSkills() {
+  const routeBranch = S.route ? ROUTES[S.route].branch : null;
+  const branches = SKILL_BRANCHES.map(b => {
+    const isRoute = b.key === routeBranch;
+    return `
+    <div class="branch ${isRoute ? 'route-branch' : ''}">
+      <div class="branch-head">
+        <h3>${b.name}${isRoute ? ' <span class="route-badge">本路线 · 消耗 −1</span>' : ''}</h3>
+        <span>${b.desc}</span>
+      </div>
+      <div class="skill-list">
+        ${b.skills.map(sk => {
+          const lv = S.skills[sk.key] || 0;
+          const nextLv = lv + 1;
+          const cost = nextLv <= 6 ? skillCost(S, sk.key, nextLv) : null;
+          const baseCost = nextLv <= 6 ? SKILL_COST[nextLv] : null;
+          const can = cost != null && S.sp >= cost;
+          const pips = [1, 2, 3, 4, 5, 6].map(i => `<i class="${i <= lv ? 'on' : ''}">${SKILL_LEVELS[i]}</i>`).join('');
+          const costText = cost == null ? '已满级'
+            : (isRoute && baseCost !== cost ? `需 ${cost} 点（原 ${baseCost}）` : `需 ${cost} 点`);
+          return `
+            <div class="skill-row">
+              <span class="s-name">${sk.name}${SKILL_SKILLS[sk.key] ? ` <span class="s-unlock ${lv >= 6 ? 'on' : ''}">S 级解锁：${SKILL_SKILLS[sk.key].name}</span>` : ''}</span>
+              <span class="skill-lv">${pips}</span>
+              <span class="s-cost">${costText}</span>
+              <span class="s-btn"><button ${can ? '' : 'disabled'} onclick="upSkill('${sk.key}')">升级</button></span>
+            </div>`;
+        }).join('')}
+      </div>
+      ${b.skills.some(sk => SKILL_SKILLS[sk.key]) ? `<div class="s-unlock-note">${b.skills.filter(sk => SKILL_SKILLS[sk.key]).map(sk => `${sk.name} S 级 → ${SKILL_SKILLS[sk.key].desc}`).join('　·　')}</div>` : ''}
+    </div>`;
+  }).join('');
+  openModal(`
+    <div class="modal-head"><div class="kicker">技能树</div><h2>可用技能点：${S.sp}</h2></div>
+    <div class="modal-body">${branches}</div>
+    <div class="modal-foot"><button class="btn primary" onclick="closeModal()">关闭</button></div>`, true);
+}
+
+function upSkill(key) {
+  const lv = S.skills[key] || 0;
+  const nextLv = lv + 1;
+  if (nextLv > 6) return;
+  const cost = skillCost(S, key, nextLv);
+  if (S.sp < cost) return;
+  S.sp -= cost; S.spSpent = (S.spSpent || 0) + cost; S.skills[key] = nextLv;
+  saveGame(S); openSkills(); renderSidebar(); renderTop();
+}
+
+/* ================= 履历 ================= */
+function openHistory() {
+  const items = S.history.map(h => `
+    <div class="tl-item ${h.kind}">
+      <div class="tl-year">第 ${h.year} 年 · ${h.age} 岁</div>
+      <div class="tl-text"><b>${h.title}</b> — ${h.text}</div>
+    </div>`).join('') || '<div class="empty">履历尚空。</div>';
+  openModal(`
+    <div class="modal-head"><div class="kicker">生涯履历</div><h2>${S.name} · ${RANKS[S.rankIdx].name}</h2></div>
+    <div class="modal-body"><div class="timeline">${items}</div></div>
+    <div class="modal-foot"><button class="btn primary" onclick="closeModal()">关闭</button></div>`, true);
+}
+
+/* ================= 结局 ================= */
+function showEnding() {
+  const e = S.ending || ENDINGS[ENDINGS.length - 1];
+  const tierCls = e.tier === 'warn' ? 'tier-warn' : e.tier === 'plain' ? 'tier-plain' : '';
+  const tl = S.history.map(h => `
+    <div class="tl-item ${h.kind}">
+      <div class="tl-year">第 ${h.year} 年 · ${h.age} 岁</div>
+      <div class="tl-text"><b>${h.title}</b> — ${h.text}</div>
+    </div>`).join('');
+  const rk = myRank(S);
+
+  openModal(`
+    <div class="ending-hero ${tierCls}">
+      <div class="e-star"></div>
+      <div class="e-kicker">生涯终局</div>
+      <h2>${e.name}</h2>
+      <div class="e-rank">${S.name} · 最终军衔 ${RANKS[S.rankIdx].name} · ${S.endReason || ''}</div>
+      <div class="e-insignia">${insigniaSVG(S.rankIdx, 130)}</div>
+    </div>
+    <div class="modal-body">
+      <div class="narrative">${e.text}</div>
+      <div class="summary-grid">
+        <div class="summary-cell"><div class="sc-k">在役年数</div><div class="sc-v">${S.serviceYear} 年</div></div>
+        <div class="summary-cell"><div class="sc-k">最终军衔</div><div class="sc-v">${RANKS[S.rankIdx].name}</div></div>
+        <div class="summary-cell"><div class="sc-k">累计功勋</div><div class="sc-v">${Math.round(S.merit)}</div></div>
+        <div class="summary-cell"><div class="sc-k">同期位次</div><div class="sc-v">第 ${rk.pos}/${rk.total}</div></div>
+        <div class="summary-cell"><div class="sc-k">作风纪律</div><div class="sc-v">${discGrade(S.dv.discipline).name}</div></div>
+        <div class="summary-cell"><div class="sc-k">负伤次数</div><div class="sc-v">${S.injuryCount} 次</div></div>
+        <div class="summary-cell"><div class="sc-k">培养接班人</div><div class="sc-v">${S.heir || 0} 人</div></div>
+      </div>
+      <h3 style="font-size:14px;margin-bottom:12px">本次解锁的成就</h3>
+      <div class="achv-list">
+        ${(S.newAchievements && S.newAchievements.length)
+          ? S.newAchievements.map(id => {
+              const a = ACHIEVEMENTS.find(x => x.id === id);
+              return `<div class="achv-row on"><span class="ar-mark">★</span><span class="ar-name">${a.name}</span><span class="ar-desc">${a.desc}</span></div>`;
+            }).join('')
+          : '<div class="empty">本次没有解锁新成就。</div>'}
+      </div>
+      <div class="hint-line" style="margin-bottom:18px">下一周目可以选择继承家训，让父辈的履历成为你的起点。</div>
+      <h3 style="font-size:14px;margin-bottom:12px">生涯履历</h3>
+      <div class="timeline">${tl}</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal()">查看最后的状态</button>
+      <button class="btn primary" onclick="clearSave();location.reload()">再来一次</button>
+    </div>`, true);
+  clearSave();
+  renderAll();
+}
+
+/* ================= 启动 ================= */
+window.addEventListener('DOMContentLoaded', init);
+
+</script>
+</body>
+</html>
