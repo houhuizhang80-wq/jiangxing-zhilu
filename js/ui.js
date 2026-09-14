@@ -113,7 +113,7 @@ function maybeTutorial() {
         每回合你有固定行动点。左侧是属性与部队，右侧安排本回合行动，然后点「结束回合」。<br><br>
         建议第一回合：先做 1–2 次训练，再点「自动安排」感受节奏；有金色「机会」卡时优先看一眼。
       </div>
-      <div class="hint-line">顶栏「帮助」可随时查看玩法与快捷键。</div>
+      <div class="hint-line">底部菜单可打开路线、关系、排名、技能、勋章、档案、存档等。</div>
     </div>
     <div class="modal-foot">
       <button class="btn primary" onclick="closeTutorial()">开始生涯</button>
@@ -152,25 +152,88 @@ function bindKeys() {
   });
 }
 
+function setNavActive(key) {
+  const nav = $('bottomNav');
+  if (!nav || !nav.querySelectorAll) return;
+  nav.querySelectorAll('.nav-item').forEach(el => {
+    el.classList.toggle('on', el.getAttribute('data-nav') === key);
+  });
+}
+
+function scrollToEl(el) {
+  if (!el || !el.scrollIntoView) return;
+  try {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (e) {
+    el.scrollIntoView();
+  }
+}
+
+function bindBottomNav() {
+  const nav = $('bottomNav');
+  if (!nav) return;
+  nav.addEventListener('click', function (e) {
+    const btn = e.target && e.target.closest ? e.target.closest('.nav-item') : null;
+    if (!btn) return;
+    const key = btn.getAttribute('data-nav');
+    setNavActive(key);
+    sfx('click');
+    if (key === 'turn') { scrollToEl($('main')); return; }
+    if (key === 'stats') { scrollToEl($('sidebar')); return; }
+    if (key === 'more') { openMoreSheet(); return; }
+    if (key === 'route') openRoute();
+    else if (key === 'network') openNetwork();
+    else if (key === 'rank') openRanking();
+    else if (key === 'skills') openSkills();
+    else if (key === 'achv') openAchv();
+    else if (key === 'medals') openMedals();
+    else if (key === 'profile') openProfile();
+    else if (key === 'history') openHistory();
+    else if (key === 'save') openSaveIO();
+  }, { passive: true });
+}
+
+function openMoreSheet() {
+  openModal(`
+    <div class="modal-head">
+      <div class="kicker">更多</div>
+      <h2>设置与说明</h2>
+    </div>
+    <div class="modal-body">
+      <div class="more-grid">
+        <button type="button" class="opt" onclick="closeModal();openHelp()">
+          <div class="o-label">帮助</div>
+          <div class="o-hint">玩法说明与桌面快捷键</div>
+        </button>
+        <button type="button" class="opt" onclick="closeModal();toggleTheme()">
+          <div class="o-label">切换主题</div>
+          <div class="o-hint">深色 / 浅色，自动记忆</div>
+        </button>
+        <button type="button" class="opt risky" onclick="doRestart()">
+          <div class="o-label">重新开始</div>
+          <div class="o-hint">只清空当前存档槽，其他槽保留</div>
+        </button>
+      </div>
+      <div class="hint-line">成就、勋章、传承为全局收藏，不随「重新开始」清空。</div>
+    </div>
+    <div class="modal-foot"><button class="btn primary" onclick="closeModal()">关闭</button></div>`);
+}
+
+function doRestart() {
+  if (confirm('确定要放弃当前槽（槽 ' + getActiveSlot() + '）的生涯，重新开始吗？其他槽不受影响。')) {
+    clearSave();
+    location.reload();
+  }
+}
+
 function init() {
   applyTheme();
   bindKeys();
-  $('btnSkills').onclick = openSkills;
-  $('btnHistory').onclick = openHistory;
-  $('btnRank').onclick = openRanking;
-  $('btnRoute').onclick = openRoute;
-  $('btnAchv').onclick = openAchv;
-  $('btnMedals').onclick = openMedals;
-  $('btnProfile').onclick = openProfile;
-  $('btnSaveIO').onclick = openSaveIO;
-  $('btnHelp').onclick = openHelp;
-  $('btnTheme').onclick = toggleTheme;
-  $('btnNetwork').onclick = openNetwork;
-  $('btnRestart').onclick = () => {
-    if (confirm('确定要放弃当前槽（槽 ' + getActiveSlot() + '）的生涯，重新开始吗？其他槽不受影响。')) {
-      clearSave(); location.reload();
-    }
-  };
+  bindBottomNav();
+  // 「更多」抽屉里的隐藏入口
+  if ($('btnHelp')) $('btnHelp').onclick = openHelp;
+  if ($('btnTheme')) $('btnTheme').onclick = toggleTheme;
+  if ($('btnRestart')) $('btnRestart').onclick = doRestart;
   const saved = loadGame();
   if (saved && !saved.ended) {
     S = normalizeSave(saved);
@@ -437,6 +500,18 @@ function startGame() {
 }
 
 /* ================= 渲染 ================= */
+let __renderQueued = false;
+function scheduleRender() {
+  if (__renderQueued) return;
+  __renderQueued = true;
+  const run = () => {
+    __renderQueued = false;
+    renderAll();
+  };
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(run);
+  else setTimeout(run, 0);
+}
+
 function renderAll() {
   renderTop();
   renderSidebar();
@@ -629,11 +704,11 @@ function onAction(id) {
   const r = doAction(S, id);
   if (!r.ok) return;
   sfx('action');
-  renderTop(); renderSidebar(); renderMain();
+  scheduleRender();
 }
 function onAutoArrange() {
   autoSpendAP(S);
-  renderTop(); renderSidebar(); renderMain();
+  scheduleRender();
 }
 function onEndTurn() {
   const res = finishTurn(S);

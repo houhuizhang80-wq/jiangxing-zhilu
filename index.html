@@ -24,20 +24,6 @@
       <div class="insignia" id="insignia" aria-hidden="true"></div>
     </div>
     <div class="career" id="career"></div>
-    <nav class="topbar-actions" id="topActions" aria-label="功能">
-      <button class="btn ghost" id="btnRoute">成长路线</button>
-      <button class="btn ghost" id="btnNetwork">关系网</button>
-      <button class="btn ghost" id="btnRank">同期排名</button>
-      <button class="btn ghost" id="btnSkills">技能树</button>
-      <button class="btn ghost" id="btnAchv">成就</button>
-      <button class="btn ghost" id="btnMedals">勋章墙</button>
-      <button class="btn ghost" id="btnProfile">生涯档案</button>
-      <button class="btn ghost" id="btnSaveIO">存档</button>
-      <button class="btn ghost" id="btnHelp" title="玩法与快捷键">帮助</button>
-      <button class="btn ghost" id="btnTheme" title="切换深浅色">主题</button>
-      <button class="btn ghost" id="btnHistory">履历</button>
-      <button class="btn ghost" id="btnRestart">重新开始</button>
-    </nav>
   </header>
 
   <div class="merit-wrap" id="meritWrap">
@@ -53,6 +39,29 @@
   <footer class="disclaimer">
     本作品为虚构军事题材模拟游戏。人物、部队番号、事件与战役均系虚构，不涉及任何现实人物、单位与事件。
   </footer>
+</div>
+
+<!-- 底部：全部功能按钮菜单 -->
+<nav class="bottom-nav" id="bottomNav" aria-label="功能菜单">
+  <button type="button" class="nav-item on" data-nav="turn" id="navTurn"><span class="nav-ico">☰</span><span>回合</span></button>
+  <button type="button" class="nav-item" data-nav="stats" id="navStats"><span class="nav-ico">▦</span><span>属性</span></button>
+  <button type="button" class="nav-item" data-nav="route" id="btnRoute"><span class="nav-ico">↗</span><span>路线</span></button>
+  <button type="button" class="nav-item" data-nav="network" id="btnNetwork"><span class="nav-ico">人</span><span>关系</span></button>
+  <button type="button" class="nav-item" data-nav="rank" id="btnRank"><span class="nav-ico">序</span><span>排名</span></button>
+  <button type="button" class="nav-item" data-nav="skills" id="btnSkills"><span class="nav-ico">★</span><span>技能</span></button>
+  <button type="button" class="nav-item" data-nav="achv" id="btnAchv"><span class="nav-ico">☆</span><span>成就</span></button>
+  <button type="button" class="nav-item" data-nav="medals" id="btnMedals"><span class="nav-ico">◎</span><span>勋章</span></button>
+  <button type="button" class="nav-item" data-nav="profile" id="btnProfile"><span class="nav-ico">档</span><span>档案</span></button>
+  <button type="button" class="nav-item" data-nav="history" id="btnHistory"><span class="nav-ico">时</span><span>履历</span></button>
+  <button type="button" class="nav-item" data-nav="save" id="btnSaveIO"><span class="nav-ico">▣</span><span>存档</span></button>
+  <button type="button" class="nav-item" data-nav="more" id="navMore"><span class="nav-ico">⋯</span><span>更多</span></button>
+</nav>
+
+<!-- 「更多」：帮助 / 主题 / 重开 -->
+<div id="moreActions" hidden>
+  <button type="button" id="btnHelp">帮助</button>
+  <button type="button" id="btnTheme">主题</button>
+  <button type="button" id="btnRestart">重新开始</button>
 </div>
 
 <div id="modalRoot"></div>
