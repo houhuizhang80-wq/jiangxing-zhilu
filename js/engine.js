@@ -70,6 +70,165 @@ function traitRisk(s) {
   return r;
 }
 
+/* ---------- 难度 / 部队 / 时代 ---------- */
+function diffOf(s) {
+  return DIFFICULTIES[(s && s.difficulty) || 'normal'] || DIFFICULTIES.normal;
+}
+
+function unitTierOf(stage) {
+  return UNIT_TIERS.find(u => u.stage === stage) || UNIT_TIERS[0];
+}
+
+/* ---------- 职务 ---------- */
+function getPosition(s) {
+  return POSITION_MAP[s.positionId] || POSITION_MAP.p_soldier;
+}
+
+function positionTypeOfRoute(route) {
+  if (route === 'political') return 'pol';
+  if (route === 'staff') return 'stf';
+  if (route === 'command') return 'line';
+  return null;
+}
+
+function canHoldPosition(s, p) {
+  if (stageIndex(s.stage) < p.minStage) return false;
+  if (s.rankIdx < p.minRank || s.rankIdx > p.maxRank + 1) return false;
+  // 路线限定：未选路线时只走军士通用岗；选定后优先本路线
+  if (p.route) {
+    if (!s.route) return false;
+    if (p.route !== s.route) return false;
+  }
+  if (p.type === 'nco' && s.rankIdx >= 9 && p.level < 3) return false; // 当军官后不再任班长类
+  if (p.type !== 'nco' && s.rankIdx < 9 && p.level >= 4) return false;
+  return true;
+}
+
+/* 挑选当前可任的最佳职务（级别高、匹配路线） */
+function bestPositionFor(s) {
+  const routeType = positionTypeOfRoute(s.route);
+  let best = null;
+  POSITIONS.forEach(p => {
+    if (!canHoldPosition(s, p)) return;
+    if (!best) { best = p; return; }
+    // 优先本路线类型，其次级别
+    const scoreP = p.level * 10 + (routeType && p.type === routeType ? 20 : 0) + (p.type === 'nco' && s.rankIdx < 9 ? 5 : 0);
+    const scoreB = best.level * 10 + (routeType && best.type === routeType ? 20 : 0) + (best.type === 'nco' && s.rankIdx < 9 ? 5 : 0);
+    if (scoreP > scoreB) best = p;
+  });
+  return best || POSITION_MAP.p_soldier;
+}
+
+function applyPosition(s, pos, silent) {
+  if (!pos) return false;
+  if (s.positionId === pos.id) return false;
+  const from = getPosition(s);
+  s.positionId = pos.id;
+  s.positionYear = s.year;
+  if (pos.unitSize && s.unit) {
+    if (pos.unitSize > (s.unit.size || 0)) {
+      s.unit.size = pos.unitSize;
+      s.unit.cohesion = clamp(s.unit.cohesion - 3, 0, 100);
+    }
+  }
+  if (!silent) {
+    pushLog(s, '职务任命', '被任命为' + pos.name + (from && from.id !== pos.id ? '（原' + from.name + '）' : ''), 'gold');
+    pushHistory(s, '任' + pos.name, '职务调整：' + from.name + ' → ' + pos.name, 'rank');
+  }
+  return true;
+}
+
+function reviewPosition(s, silent) {
+  const best = bestPositionFor(s);
+  const cur = getPosition(s);
+  // 仅在可任更高级别或类型更贴合时调整
+  if (!best) return false;
+  const routeType = positionTypeOfRoute(s.route);
+  const better =
+    best.level > cur.level ||
+    (best.level === cur.level && routeType && best.type === routeType && cur.type !== routeType);
+  if (!better) return false;
+  // 不是自动连跳太多级：最多 +2
+  if (best.level > cur.level + 2) {
+    const step = POSITIONS
+      .filter(p => canHoldPosition(s, p) && p.level === cur.level + 1)
+      .sort((a, b) => {
+        const sa = a.level * 10 + (routeType && a.type === routeType ? 20 : 0);
+        const sb = b.level * 10 + (routeType && b.type === routeType ? 20 : 0);
+        return sb - sa;
+      })[0];
+    return applyPosition(s, step || best, silent);
+  }
+  return applyPosition(s, best, silent);
+}
+
+function positionMeritMul(s) {
+  return (getPosition(s) || {}).meritMul || 1;
+}
+
+function initUnit(s) {
+  const tier = unitTierOf(s.stage || 'recruit');
+  s.unit = {
+    name: UNIT_NAME_POOL[Math.floor(Math.random() * UNIT_NAME_POOL.length)],
+    tier: tier.name,
+    size: tier.size,
+    cohesion: 62,
+    training: 55,
+    losses: 0,
+    honor: 0
+  };
+}
+
+function upgradeUnit(s) {
+  if (!s.unit) initUnit(s);
+  const tier = unitTierOf(s.stage);
+  if (s.unit.tier === tier.name) return false;
+  const up = tier.size > (s.unit.size || 0);
+  s.unit.tier = tier.name;
+  s.unit.size = tier.size;
+  if (up) {
+    s.unit.cohesion = clamp(s.unit.cohesion - 4, 0, 100);
+    s.unit.training = clamp(s.unit.training - 6, 0, 100);
+    pushLog(s, '部队扩编', '你所带的单位调整为「' + tier.name + '」，凝聚力与训练需要重新抓', 'gold');
+  }
+  return true;
+}
+
+function unitTick(s, opts) {
+  if (!s.unit) initUnit(s);
+  const u = s.unit;
+  const d = diffOf(s);
+  u.cohesion = clamp(u.cohesion - 0.7 * d.healthDecay, 0, 100);
+  u.training = clamp(u.training - 0.5 * d.discDecay, 0, 100);
+  if (s.st.morale >= 70) u.cohesion = clamp(u.cohesion + 0.4, 0, 100);
+  if (s.dv.discipline >= 75) u.training = clamp(u.training + 0.3, 0, 100);
+  if (opts && opts.losses) {
+    u.losses += opts.losses;
+    u.cohesion = clamp(u.cohesion - opts.losses * 2.5, 0, 100);
+  }
+  if (opts && opts.honor) {
+    u.honor += opts.honor;
+    u.cohesion = clamp(u.cohesion + opts.honor * 0.5, 0, 100);
+  }
+}
+
+function eraOf(s) {
+  return eraForYear(s.year || s.serviceYear || 1);
+}
+
+function recordCareerTrack(s) {
+  if (!s.careerTrack) s.careerTrack = [];
+  const row = {
+    year: s.year, merit: Math.round(s.merit), rankIdx: s.rankIdx,
+    prestige: Math.round(s.st.prestige), health: Math.round(s.st.health),
+    unit: s.unit ? Math.round(s.unit.cohesion) : 0
+  };
+  const last = s.careerTrack[s.careerTrack.length - 1];
+  if (last && last.year === s.year) s.careerTrack[s.careerTrack.length - 1] = row;
+  else s.careerTrack.push(row);
+  if (s.careerTrack.length > 80) s.careerTrack.shift();
+}
+
 /* ---------- 新游戏 ---------- */
 function newGame(name, alloc, traits, opts) {
   const o = opts || {};
@@ -78,11 +237,13 @@ function newGame(name, alloc, traits, opts) {
 
   const s = {
     name: name || '无名',
+    slot: o.slot || getActiveSlot(),
     traits: traits.slice(),
     enlist: enlist.key,
     mottoId: motto ? motto.id : null,
     legacy: !!o.legacy,
     prename: o.prename || '',
+    difficulty: DIFFICULTIES[o.difficulty] ? o.difficulty : 'normal',
     turnIndex: 0,
     year: 1, stage: 'recruit',
     age: 18, serviceYear: 1,
@@ -100,7 +261,22 @@ function newGame(name, alloc, traits, opts) {
     rankPos: 1, rankTotal: 8, prevRankPos: 1,
     log: [], history: [],
     ended: false, ending: null, endReason: null,
-    injuryCount: 0
+    injuryCount: 0,
+    careerTrack: [],
+    lastEraId: eraForYear(1).id,
+    sfxOn: true,
+    familyInfo: {
+      married: false,
+      spouse: '',
+      spouseTag: '',
+      kids: 0,
+      kidNames: [],
+      tension: 0
+    },
+    allyId: null,
+    nemesisId: null,
+    positionId: 'p_soldier',
+    positionYear: 1
   };
 
   ATTRS.forEach(a => { s.attr[a.key] = ATTR_BASE + (alloc[a.key] || 0); });
@@ -138,12 +314,15 @@ function newGame(name, alloc, traits, opts) {
   computeDerived(s);
   initRivals(s);
   initNPCs(s);
+  initUnit(s);
   const t = TIMELINE[0];
   s.year = t.year; s.stage = t.stage;
   s.ap = STAGES[s.stage].ap; s.apMax = s.ap;
+  recordCareerTrack(s);
 
-  pushLog(s, '入伍', '你穿上了新军装，胸前别着大红花。' + (enlist.key !== 'conscript' ? '（' + enlist.name + '）' : ''), 'gold');
-  pushHistory(s, '入伍', '以' + enlist.name + '身份入伍，授' + RANKS[s.rankIdx].name + '军衔', 'rank');
+  pushLog(s, '入伍', '你穿上了新军装，胸前别着大红花。' + (enlist.key !== 'conscript' ? '（' + enlist.name + '）' : '') + '　难度：' + DIFFICULTIES[s.difficulty].name, 'gold');
+  pushHistory(s, '入伍', '以' + enlist.name + '身份入伍，授' + RANKS[s.rankIdx].name + '军衔　·　难度' + DIFFICULTIES[s.difficulty].name, 'rank');
+  pushLog(s, '到职', '你被分配到' + s.unit.name + '（' + s.unit.tier + '）', '');
   if (motto) {
     pushLog(s, '家风', '你带着「' + motto.name + '」走进了军营。', 'gold');
     pushHistory(s, '继承家训', motto.name + ' —— ' + motto.desc, 'gold');
@@ -159,30 +338,411 @@ function computeDerived(s) {
   s.dv.professional = clamp((a.zhimou * 0.5 + a.yizhi * 0.3 + a.tibo * 0.2) + b.professional, 0, 110);
 }
 
-/* ---------- 同期军官 ---------- */
+/* ---------- 同期军官 AI ---------- */
+const RIVAL_STYLE_KEYS = ['aggressive', 'balanced', 'political', 'technical', 'social'];
+
 function initRivals(s) {
   const pool = RIVAL_NAMES.slice();
   s.rivals = [];
   for (let i = 0; i < 7; i++) {
     const name = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
+    const styleKey = RIVAL_STYLE_KEYS[Math.floor(Math.random() * RIVAL_STYLE_KEYS.length)];
+    const style = RIVAL_STYLES[styleKey] || RIVAL_STYLES.balanced;
     s.rivals.push({
       name: name,
       tag: RIVAL_TAGS[Math.floor(Math.random() * RIVAL_TAGS.length)],
+      style: styleKey,
+      styleName: style.name,
       power: rnd(0.82, 1.18),
-      merit: 0
+      merit: 0,
+      rankIdx: 0,
+      prestige: rnd(18, 32),
+      discipline: rnd(58, 72),
+      ambition: rnd(0.7, 1.3),
+      heat: 0,          // 近期竞争热度
+      lastEvent: '',
+      lastGain: 0,
+      trend: 0
     });
   }
 }
 
+/* 对手按阶段可晋升到的上限（略宽于玩家，制造压迫感） */
+function rivalStageCap(s) {
+  const st = STAGES[s.stage];
+  return st ? st.maxRank : 1;
+}
+
+function tryPromoteRival(s, r) {
+  const cap = rivalStageCap(s);
+  const next = r.rankIdx + 1;
+  if (next > cap || next >= RANKS.length) return false;
+  const need = RANKS[next].need * (0.90 + 0.22 * (1 - r.ambition * 0.3));
+  const style = RIVAL_STYLES[r.style] || RIVAL_STYLES.balanced;
+  const gate = RANK_GATES[next];
+  if (r.merit < need) return false;
+  if (r.discipline < 55) return false;
+  if (gate) {
+    if (gate.prestige && r.prestige < gate.prestige * 0.92) return false;
+    if (gate.disc && r.discipline < gate.disc * 0.95) return false;
+    // 人脉型更容易绕过部分硬门槛
+    if (r.style === 'political' && Math.random() > 0.75) return false;
+  }
+  // 性格加成：拼抢/人脉晋升略快
+  if (Math.random() > 0.72 + style.promoBoost + (r.ambition - 1) * 0.1) return false;
+
+  const from = RANKS[r.rankIdx].name;
+  r.rankIdx = next;
+  r.prestige = clamp(r.prestige + 2.5, 0, 100);
+  r.heat = clamp(r.heat + 12, 0, 100);
+
+  const to = RANKS[next].name;
+  if (next > s.rankIdx) {
+    pushLog(s, '同期动态', r.name + '先你一步晋升为' + to, 'bad');
+    r.lastEvent = '晋升' + to;
+    // 被反超会刺激玩家（信任/士气轻负反馈）
+    if (s.merit > 0) s.st.morale = clamp(s.st.morale - 1.2, 0, 100);
+  } else if (Math.random() < 0.45) {
+    pushLog(s, '同期动态', r.name + '由' + from + '晋升为' + to, '');
+    r.lastEvent = '晋升' + to;
+  } else {
+    r.lastEvent = '晋升' + to;
+  }
+  return true;
+}
+
+/* 对手个人事件：高光 / 翻车 / 与你对照 */
+function rivalCareerEvent(s, r) {
+  const style = RIVAL_STYLES[r.style] || RIVAL_STYLES.balanced;
+  const roll = Math.random();
+  if (roll < 0.035 + style.setback * 0.15) {
+    // 翻车
+    const loss = rnd(0.04, 0.12) * r.merit + 80;
+    r.merit = Math.max(0, r.merit - loss);
+    r.prestige = clamp(r.prestige - rnd(3, 8), 0, 100);
+    r.discipline = clamp(r.discipline - rnd(1, 4), 40, 100);
+    r.lastEvent = '受挫';
+    r.heat = clamp(r.heat - 8, 0, 100);
+    if (Math.random() < 0.55) {
+      const line = RIVAL_EVENT_POOL.setback[Math.floor(Math.random() * RIVAL_EVENT_POOL.setback.length)];
+      pushLog(s, '同期动态', r.name + line, '');
+    }
+  } else if (roll < 0.08) {
+    // 高光
+    const gain = rnd(0.03, 0.09) * Math.max(200, r.merit) + 120;
+    r.merit += gain;
+    r.prestige = clamp(r.prestige + rnd(2, 6), 0, 100);
+    r.heat = clamp(r.heat + 10, 0, 100);
+    r.lastEvent = '高光';
+    if (Math.random() < 0.5) {
+      const line = RIVAL_EVENT_POOL.boost[Math.floor(Math.random() * RIVAL_EVENT_POOL.boost.length)];
+      pushLog(s, '同期动态', r.name + line, 'gold');
+    }
+  } else if (roll < 0.115 && Math.abs(r.merit - s.merit) < 1800) {
+    // 与你贴身竞争
+    r.heat = clamp(r.heat + 15, 0, 100);
+    r.lastEvent = '与你较劲';
+    const line = RIVAL_EVENT_POOL.vsPlayer[Math.floor(Math.random() * RIVAL_EVENT_POOL.vsPlayer.length)];
+    if (Math.random() < 0.7) pushLog(s, '同期较劲', r.name + line, '');
+    // 你被盯上时，若位次靠后会小幅压信任
+    if (myRank(s).pos >= 4) s.st.trust = clamp(s.st.trust - 0.8, 0, 100);
+  } else {
+    r.lastEvent = '';
+  }
+}
+
+/* 追赶 AI：落后玩家会加速，领先过多在标准难度下略收敛 */
+function rivalCatchUpMul(s, r) {
+  const gap = s.merit - r.merit;
+  let m = 1;
+  if (gap > 1500) {
+    // 落后越多追得越紧（封顶，避免无脑反超）
+    m += Math.min(0.28, gap / 28000);
+  } else if (gap < -2000 && s.difficulty === 'normal') {
+    m *= 0.94;
+  }
+  // 热度高的对手本回合更拼
+  m *= 1 + (r.heat / 100) * 0.08;
+  return m;
+}
+
 function tickRivals(s) {
+  if (!s.rivals || !s.rivals.length) return;
   const base = RIVAL_GAIN[s.stage] || 300;
-  s.rivals.forEach(r => { r.merit += base * r.power * rnd(0.82, 1.18); });
+  const mul = diffOf(s).rivalMul;
+  const mePos = myRank(s).pos;
+
+  s.rivals.forEach(r => {
+    if (!r.style) {
+      r.style = RIVAL_STYLE_KEYS[Math.floor(Math.random() * RIVAL_STYLE_KEYS.length)];
+      r.styleName = (RIVAL_STYLES[r.style] || RIVAL_STYLES.balanced).name;
+      r.prestige = r.prestige != null ? r.prestige : rnd(18, 32);
+      r.discipline = r.discipline != null ? r.discipline : rnd(58, 72);
+      r.ambition = r.ambition != null ? r.ambition : rnd(0.7, 1.3);
+      r.heat = r.heat || 0;
+      r.rankIdx = r.rankIdx != null ? r.rankIdx : rivalRankIdx(r.merit || 0);
+    }
+    const style = RIVAL_STYLES[r.style] || RIVAL_STYLES.balanced;
+    const catchUp = rivalCatchUpMul(s, r);
+    // 你在第一时，前二的对手额外发力
+    let pressure = 1;
+    if (mePos === 1 && r.merit >= s.merit * 0.85) pressure = 1.06;
+    // 对手随军衔获得“岗位”加成，跟上玩家的职务功勋系数
+    const postMul = 1 + Math.min(0.28, (r.rankIdx || 0) * 0.016);
+
+    const prev = r.merit;
+    let gain = base * r.power * mul * style.meritMul * catchUp * pressure * postMul;
+    gain *= rnd(1 - style.variance, 1 + style.variance);
+    r.merit += gain;
+    r.lastGain = Math.round(r.merit - prev);
+    r.trend = r.lastGain;
+
+    // 状态漂移
+    if (r.style === 'political') r.prestige = clamp(r.prestige + rnd(0.2, 1.4), 0, 100);
+    else r.prestige = clamp(r.prestige + rnd(-0.4, 1.0), 0, 100);
+    if (r.style === 'aggressive') r.discipline = clamp(r.discipline + rnd(-1.2, 0.4), 40, 100);
+    else r.discipline = clamp(r.discipline + rnd(-0.3, 0.9), 40, 100);
+
+    // 热度自然回落
+    r.heat = clamp(r.heat - 2.5, 0, 100);
+
+    tryPromoteRival(s, r);
+    rivalCareerEvent(s, r);
+  });
+}
+
+/* 生成一张「同期竞争」事件卡（低概率入队） */
+function pickRivalEvent(s) {
+  if (!s.rivals || !s.rivals.length) return null;
+  if (Math.random() > 0.18) return null;
+  // 优先选与你功勋接近或排名更高的对手
+  const sorted = s.rivals.slice().sort((a, b) => {
+    const da = Math.abs(a.merit - s.merit) - (a.merit > s.merit ? 400 : 0);
+    const db = Math.abs(b.merit - s.merit) - (b.merit > s.merit ? 400 : 0);
+    return da - db;
+  });
+  const r = sorted[0];
+  if (!r) return null;
+
+  const pool = [
+    {
+      title: '同期较劲 · ' + r.name,
+      text: r.name + '（' + (r.styleName || '稳健型') + '）最近势头很猛，你们被反复放在一起比较。',
+      options: [
+        { label: '埋头干好自己的事', hint: '信念 +2 · 无额外风险',
+          fx: { attr: { xinnian: 2 } } },
+        { label: '主动请缨压过他一头', hint: '功勋 +280 · 风险',
+          fx: { merit: 280, st: { morale: 2 } },
+          hidden: { chance: 0.35, note: '风头太劲，引来议论', st: { trust: -3 } } },
+        { label: '找他开诚布公谈一次', hint: '搭档默契 +3 · 威望 +2',
+          fx: { st: { bond: 3, prestige: 2 } } }
+      ]
+    },
+    {
+      title: '名额只有一个',
+      text: '上级给了一个关键岗位推荐名额，你和' + r.name + '都在候选之列。',
+      options: [
+        { label: '全力争取', hint: '功勋 +350 · 首长信任 +3 · 同侪关系变差',
+          fx: { merit: 350, st: { trust: 3, morale: 1 } }, flag: 'beat_peer' },
+        { label: '实事求是展示履历，让组织决定', hint: '纪律 +3 · 威望 +2',
+          fx: { dv: { discipline: 3 }, st: { prestige: 2 } } },
+        { label: '若差距不大，先推荐他', hint: '搭档默契 +5 · 威望 +3 · 功勋 −100',
+          fx: { st: { bond: 5, prestige: 3 }, merit: -100 }, flag: 'gave_up' }
+      ]
+    },
+    {
+      title: '联合任务搭档',
+      text: '你和' + r.name + '被编到同一任务组，配合好坏直接影响双方评价。',
+      options: [
+        { label: '以我为主，他打下手', hint: '统率 +2 · 搭档默契 −4',
+          fx: { attr: { tongshuai: 2 }, st: { bond: -4 } } },
+        { label: '充分授权，协同推进', hint: '搭档默契 +5 · 功勋 +200',
+          fx: { st: { bond: 5 }, merit: 200 } },
+        { label: '明算账：各管一段', hint: '专业能力 +3 · 威望 +1',
+          fx: { dv: { professional: 3 }, st: { prestige: 1 } } }
+      ]
+    }
+  ];
+  const ev = pool[Math.floor(Math.random() * pool.length)];
+  r.heat = clamp(r.heat + 20, 0, 100);
+  r.lastEvent = '与你交锋';
+  return {
+    id: 'ev_rival_ai_' + r.name + '_' + (s.year || 1),
+    title: ev.title,
+    min: 0, max: 6, weight: 12, once: true,
+    text: ev.text,
+    options: ev.options
+  };
 }
 
 function rivalRankIdx(merit) {
   let idx = 0;
   for (let i = 0; i < RANKS.length; i++) if (merit >= RANKS[i].need) idx = i;
   return idx;
+}
+
+/* ---------- 家庭线 ---------- */
+function ensureFamily(s) {
+  if (!s.familyInfo) {
+    s.familyInfo = { married: false, spouse: '', spouseTag: '', kids: 0, kidNames: [], tension: 0 };
+  }
+  return s.familyInfo;
+}
+
+function mkSpouseName() {
+  return SPOUSE_SURNAMES[ri(0, SPOUSE_SURNAMES.length - 1)] + SPOUSE_GIVEN[ri(0, SPOUSE_GIVEN.length - 1)];
+}
+
+function tryMarriage(s, queue) {
+  const f = ensureFamily(s);
+  if (f.married) return;
+  if (stageIndex(s.stage) < 1) return; // 军士期起才有机会
+  if (s.age < 22) return;
+  const chance = 0.10 + (s.st.family >= 50 ? 0.08 : 0) + (s.attr.meili >= 55 ? 0.05 : 0);
+  if (Math.random() > chance) return;
+
+  const spouse = mkSpouseName();
+  const tag = ['老师','护士','公务员','工程师','文艺兵','教师'][ri(0, 5)];
+  queue.push({
+    type: 'event',
+    data: {
+      id: 'ev_marry_' + s.year,
+      title: '成家',
+      min: 0, max: 6, weight: 12, once: true,
+      text: '驻地朋友介绍你认识了' + spouse + '（' + tag + '）。处了一段时间，你们决定结婚。',
+      options: [
+        { label: '简办婚礼，按规矩来', hint: '家庭 +10 · 纪律 +3',
+          fx: { st: { family: 10 }, dv: { discipline: 3 } }, flag: 'married_simple' },
+        { label: '热热闹闹办一场', hint: '家庭 +12 · 士气 +5 · 威望 +2',
+          fx: { st: { family: 12, morale: 5, prestige: 2 } }, flag: 'married_big' },
+        { label: '再等等，事业为重', hint: '功勋 +150 · 家庭 −4',
+          fx: { merit: 150, st: { family: -4 } } }
+      ],
+      __marry: { spouse: spouse, tag: tag }
+    }
+  });
+}
+
+function applyMarriage(s, data) {
+  const f = ensureFamily(s);
+  f.married = true;
+  f.spouse = data.spouse;
+  f.spouseTag = data.tag;
+  pushLog(s, '成家', '你和' + data.spouse + '（' + data.tag + '）组建了家庭', 'gold');
+  pushHistory(s, '成家', '与' + data.spouse + '结婚', 'gold');
+}
+
+function tryKid(s, queue) {
+  const f = ensureFamily(s);
+  if (!f.married || f.kids >= 3) return;
+  if (s.age < 24) return;
+  if (Math.random() > 0.12 + (s.st.family >= 55 ? 0.06 : 0)) return;
+  const boy = Math.random() < 0.5;
+  const name = (boy ? KID_GIVEN_BOY : KID_GIVEN_GIRL)[ri(0, 7)];
+  const full = (f.spouse ? f.spouse.charAt(0) : '家') + name;
+  queue.push({
+    type: 'event',
+    data: {
+      id: 'ev_kid_' + s.year + '_' + f.kids,
+      title: '家里添丁',
+      min: 0, max: 6, weight: 12, once: true,
+      text: f.spouse + '生了' + (boy ? '个儿子' : '个女儿') + '。你连夜从驻地赶回家，抱起孩子时手都在抖。',
+      options: [
+        { label: '请老人帮忙带，自己安心服役', hint: '家庭 +8 · 士气 +4',
+          fx: { st: { family: 8, morale: 4 } }, __kid: full },
+        { label: '申请家属随军', hint: '家庭 +10 · 健康 −2 · 功勋 −100',
+          fx: { st: { family: 10, health:-2 }, merit: -100 }, __kid: full, flag: 'family_joined' },
+        { label: '尽量多抽时间回家', hint: '家庭 +6 · 首长信任 −2',
+          fx: { st: { family: 6, trust: -2 } }, __kid: full }
+      ]
+    }
+  });
+}
+
+function applyKid(s, name) {
+  const f = ensureFamily(s);
+  f.kids += 1;
+  f.kidNames.push(name);
+  pushLog(s, '添丁', '孩子' + name + '出生', 'gold');
+  pushHistory(s, '孩子出生', name, 'gold');
+}
+
+function familyTick(s) {
+  const f = ensureFamily(s);
+  if (!f.married) return;
+  // 长期不顾家会积累张力
+  if (s.st.family < 35) f.tension = clamp(f.tension + 1.5, 0, 100);
+  else f.tension = clamp(f.tension - 0.8, 0, 100);
+  if (f.tension > 70 && Math.random() < 0.25) {
+    s.st.morale = clamp(s.st.morale - 2, 0, 100);
+    pushLog(s, '家庭张力', '爱人抱怨你常年不在家，电话那头沉默了很久', 'bad');
+  }
+}
+
+/* ---------- 同期同盟 / 宿敌 ---------- */
+function ensureRivalRel(s) {
+  if (!s.rivals || !s.rivals.length) return null;
+  if (s.flags.seek_ally && !s.allyId) {
+    // 选功勋接近的对手结成同盟
+    const sorted = s.rivals.slice().sort((a, b) => Math.abs(a.merit - s.merit) - Math.abs(b.merit - s.merit));
+    if (sorted[0]) {
+      s.allyId = sorted[0].name;
+      sorted[0].heat = clamp((sorted[0].heat || 0) - 20, 0, 100);
+      pushLog(s, '结成同盟', '你和' + sorted[0].name + '在多次配合后成了真正靠得住的同期', 'gold');
+    }
+  }
+  if (s.flags.seek_nemesis && !s.nemesisId) {
+    const hot = s.rivals.slice().sort((a, b) => (b.heat || 0) - (a.heat || 0))[0];
+    if (hot) {
+      s.nemesisId = hot.name;
+      hot.heat = clamp((hot.heat || 0) + 15, 0, 100);
+      pushLog(s, '结下梁子', '你和' + hot.name + '较上了劲，此后处处针锋相对', 'bad');
+    }
+  }
+  return { ally: s.allyId, nemesis: s.nemesisId };
+}
+
+function allyTick(s) {
+  if (!s.allyId) return;
+  const a = (s.rivals || []).find(r => r.name === s.allyId);
+  if (!a) return;
+  // 盟友偶尔帮你
+  if (Math.random() < 0.08) {
+    s.st.bond = clamp(s.st.bond + 3, 0, 100);
+    s.st.trust = clamp(s.st.trust + 1.5, 0, 100);
+    pushLog(s, '同盟互助', a.name + '在关键场合替你说了话', 'gold');
+  }
+  // 盟友受挫你也会被牵连一点
+  if (a.lastEvent === '受挫' && Math.random() < 0.3) {
+    s.st.prestige = clamp(s.st.prestige - 1, 0, 100);
+  }
+}
+
+function nemesisTick(s, queue) {
+  if (!s.nemesisId) return;
+  const n = (s.rivals || []).find(r => r.name === s.nemesisId);
+  if (!n) return;
+  if (Math.random() < 0.10) {
+    queue.push({
+      type: 'event',
+      data: {
+        id: 'ev_nemesis_' + s.year,
+        title: '宿敌发难',
+        min: 0, max: 6, weight: 12, once: true,
+        text: n.name + '在公开场合质疑你的方案，会场气氛一度很僵。',
+        options: [
+          { label: '用数据当场回击', hint: '威望 +5 · 智谋 +2 · 关系恶化',
+            fx: { st: { prestige: 5 }, attr: { zhimou: 2 } } },
+          { label: '会后私下解决', hint: '搭档默契 −2 · 纪律 +3',
+            fx: { st: { bond: -2 }, dv: { discipline: 3 } } },
+          { label: '主动示弱，化干戈', hint: '威望 −2 · 信念 +3 · 或可缓和',
+            fx: { st: { prestige: -2 }, attr: { xinnian: 3 } } }
+        ]
+      }
+    });
+  }
+  // 宿敌盯着你，位次压力
+  if (n.merit > s.merit) s.st.morale = clamp(s.st.morale - 0.6, 0, 100);
 }
 
 /* ============================================================
@@ -366,7 +926,10 @@ function applyEffects(s, fx, scale) {
 
   if (fx.merit) {
     let raw = fx.merit * k;
-    if (raw > 0) raw *= traitMul(s, 'meritMul');
+    if (raw > 0) {
+      raw *= traitMul(s, 'meritMul');
+      raw *= positionMeritMul(s);
+    }
     s.merit = Math.max(0, s.merit + raw);
     if (Math.abs(raw) > 0.5) changes.push({ label: '功勋', v: raw });
   }
@@ -471,6 +1034,7 @@ function chooseRoute(s, key) {
   pushLog(s, '选定路线', '你选择了' + r.name + '——' + r.motto, 'gold');
   pushHistory(s, '选择' + r.name, r.desc, 'rank');
   s.st.prestige = clamp(s.st.prestige + 3, 0, 100);
+  reviewPosition(s);
   return true;
 }
 
@@ -520,6 +1084,16 @@ function doAction(s, id) {
   // 行动会作用到具体的人，而不再只是抽象数值
   const nf = ACTION_NPC_AFFINITY[id];
   if (nf) addAffinity(s, nf.role, nf.v * scale);
+  // 带兵类行动同步提升部队
+  if (!s.unit) initUnit(s);
+  if (id === 'lead' || id === 'build' || id === 'unitBuild' || id === 'teachClass' || id === 'readiness') {
+    s.unit.cohesion = clamp(s.unit.cohesion + 4 * scale, 0, 100);
+    s.unit.training = clamp(s.unit.training + 3 * scale, 0, 100);
+  }
+  if (id === 'campaign' || id === 'joint' || id === 'majorScene') {
+    s.unit.honor += 1;
+    s.unit.training = clamp(s.unit.training + 2 * scale, 0, 100);
+  }
   // 冲击大元帅的成就标记
   if (id === 'grandBid') s.flags.achGrandBid = true;
   return { ok: true, changes: changes, action: a, scale: scale };
@@ -545,7 +1119,7 @@ function describeFx(fx, k) {
 
 /* 自动安排行动：按"先补短板、再攒功勋"的动态优先级花掉行动点。
    纪律是晋升硬门槛，跌破阈值时优先补；健康同理；其余行动点用于积累功勋。 */
-const MERIT_ACTIONS = ['lead','build','unitBuild','campaign','joint','serviceBuild'];
+const MERIT_ACTIONS = ['lead','build','unitBuild','campaign','joint','serviceBuild','qjBlueprint','majorScene','thinkTank'];
 const FILLER_ACTIONS = ['fitness','study','shoot','command','staff','talk','network','apparatus'];
 
 /* 路线专属行动通常比通用行动更强，排在功勋行动之前 */
@@ -641,6 +1215,21 @@ function finishTurn(s) {
     pushLog(s, '进入' + st.name, st.desc, 'gold');
     pushHistory(s, '进入' + st.name, st.desc, 'rank');
     queue.push({ type: 'stage', data: st });
+    upgradeUnit(s);
+    reviewPosition(s);
+  }
+
+  // 时代更迭
+  {
+    const era = eraOf(s);
+    if (s.lastEraId && era.id !== s.lastEraId) {
+      s.lastEraId = era.id;
+      pushLog(s, '时代变迁', era.name + '——' + era.desc, 'gold');
+      pushHistory(s, '进入' + era.name, era.desc, 'gold');
+      queue.push({ type: 'era', data: era });
+    } else if (!s.lastEraId) {
+      s.lastEraId = era.id;
+    }
   }
 
   fireEchoes(s, queue);
@@ -654,6 +1243,18 @@ function finishTurn(s) {
   const ev = pickEvent(s);
   if (ev) queue.push({ type: 'event', data: ev });
 
+  const rvEv = pickRivalEvent(s);
+  if (rvEv) queue.push({ type: 'event', data: rvEv });
+
+  // 家庭线
+  tryMarriage(s, queue);
+  tryKid(s, queue);
+
+  // 同盟 / 宿敌
+  ensureRivalRel(s);
+  allyTick(s);
+  nemesisTick(s, queue);
+
   const npcEv = pickNpcEvent(s);
   if (npcEv) queue.push({ type: 'event', data: npcEv });
 
@@ -663,20 +1264,88 @@ function finishTurn(s) {
   const pr = checkPromotion(s);
   if (pr) queue.push({ type: 'promotion', data: pr });
 
+  // 任期考评：进入尉官期后，每 4 年一次
+  if (stageIndex(s.stage) >= stageIndex('officer') && s.year % 4 === 0) {
+    const rv = buildTermReview(s);
+    if (rv) queue.push({ type: 'review', data: rv });
+  }
+
   return { queue: queue, finished: false };
+}
+
+/* 任期考评：综合纪律 / 威望 / 信任 / 健康 / 家庭 / 功勋增速 / 同期位次 */
+function buildTermReview(s) {
+  const prev = s.lastReviewMerit != null ? s.lastReviewMerit : s.merit;
+  const meritDelta = s.merit - prev;
+  s.lastReviewMerit = s.merit;
+
+  let score = 0;
+  if (s.dv.discipline >= 72) score += 22;
+  else if (s.dv.discipline >= 58) score += 12;
+  else if (s.dv.discipline < 50) score -= 8;
+
+  if (s.st.prestige >= 55) score += 20;
+  else if (s.st.prestige >= 35) score += 10;
+
+  if (s.st.trust >= 45) score += 16;
+  else if (s.st.trust >= 28) score += 8;
+
+  if (s.st.health >= 55) score += 12;
+  else if (s.st.health >= 35) score += 6;
+  else score -= 6;
+
+  if (s.st.morale >= 55) score += 12;
+  else if (s.st.morale < 40) score -= 5;
+
+  if (s.st.family >= 40) score += 8;
+
+  if (meritDelta > 2000) score += 16;
+  else if (meritDelta > 800) score += 10;
+  else if (meritDelta > 200) score += 5;
+
+  const rk = myRank(s);
+  if (rk.pos <= 2) score += 8;
+  else if (rk.pos >= 7) score -= 5;
+
+  const mult = { officer:1, field:1.5, general:2.2, marshal:2.8, legacy:2 }[s.stage] || 1;
+  let grade, title, text, fx;
+  if (score >= 88) {
+    grade = '优秀'; title = '任期考评';
+    text = '这一任期综合表现突出，讲评时被上级点名表扬，信任度明显上升。';
+    fx = { merit: Math.round(350 * mult), st: { trust:6, prestige:5 }, sp:1 };
+  } else if (score >= 68) {
+    grade = '称职'; title = '任期考评';
+    text = '各项目标任务完成得比较扎实，继续按这个节奏走。';
+    fx = { merit: Math.round(160 * mult), st: { trust:3, prestige:2 } };
+  } else if (score >= 48) {
+    grade = '基本称职'; title = '任期考评';
+    text = '总体过得去，但几项关键指标还有差距，要注意补短板。';
+    fx = { st: { morale:-2 } };
+  } else {
+    grade = '不称职'; title = '任期考评';
+    text = '讲评会上你被点名提醒。这段时间状态下滑明显，需要认真反思并拿出整改办法。';
+    fx = { st: { trust:-6, prestige:-4, morale:-5 }, dv: { discipline:-2 } };
+  }
+
+  if (score >= 88) s.flags.achReviewBest = (s.flags.achReviewBest || 0) + 1;
+  if (score < 48) s.flags.achReviewBad = (s.flags.achReviewBad || 0) + 1;
+
+  return { grade, title, text, fx, score, year: s.year, rankName: RANKS[s.rankIdx].name };
 }
 
 function settleTurn(s) {
   // 同期军官与关系网同步演化
   tickRivals(s);
   npcTick(s);
+  unitTick(s);
+
+  const d = diffOf(s);
 
   // 士气向 55 回归
   const m = s.st.morale;
   s.st.morale = clamp(m + (m > 55 ? -2.0 : m < 55 ? 1.5 : 0), 0, 100);
 
   // 健康：由年龄决定基准值，再向基准缓慢回归。
-  // 负伤与透支会把它打到基准以下，但不会不可逆地一路滑坡。
   let base = 92;
   if (s.age >= 30) base = 88;
   if (s.age >= 38) base = 82;
@@ -684,16 +1353,15 @@ function settleTurn(s) {
   if (s.age >= 52) base = 65;
   if (s.age >= 58) base = 56;
   if (s.age >= 63) base = 48;
-  if (s.st.health < base) s.st.health = Math.min(base, s.st.health + 1.1);
-  else s.st.health = Math.max(base, s.st.health - 0.5);
+  if (s.st.health < base) s.st.health = Math.min(base, s.st.health + 1.1 / d.healthDecay);
+  else s.st.health = Math.max(base, s.st.health - 0.5 * d.healthDecay);
   s.st.health = clamp(s.st.health, 0, 100);
 
-  // 纪律向基准值回归（基准设在"合格"线之上，避免不违纪的玩家被永久锁死）
-  // S 级「条令权威」使自然衰减减半
+  // 纪律向基准值回归
   const DISC_BASE = 66;
-  const discDecay = hasS(s, 'tiaoling') ? 0.175 : 0.35;
+  const discDecay = (hasS(s, 'tiaoling') ? 0.175 : 0.35) * d.discDecay;
   if (s.dv.discipline > DISC_BASE) s.dv.discipline = Math.max(DISC_BASE, s.dv.discipline - discDecay);
-  else if (s.dv.discipline < DISC_BASE) s.dv.discipline = Math.min(DISC_BASE, s.dv.discipline + 0.5);
+  else if (s.dv.discipline < DISC_BASE) s.dv.discipline = Math.min(DISC_BASE, s.dv.discipline + 0.5 / d.discDecay);
 
   // 威望与首长信任随时间淡化
   s.st.prestige *= 0.972;
@@ -717,6 +1385,26 @@ function settleTurn(s) {
   });
 
   computeDerived(s);
+
+  // 同期位次历史最高，供勋章判定
+  {
+    const rk = myRank(s);
+    if (rk.pos === 1) s.flags.everRank1 = true;
+  }
+
+  recordCareerTrack(s);
+  upgradeUnit(s);
+  // 职务随实绩缓慢上移（军衔够了但还没任命时）
+  if (s.year % 2 === 0) reviewPosition(s, true);
+  familyTick(s);
+  if (s.flags.unit_honor && s.unit && !s.flags.unit_honor_applied) {
+    s.flags.unit_honor_applied = true;
+    s.unit.honor += 1;
+    s.unit.cohesion = clamp(s.unit.cohesion + 5, 0, 100);
+  }
+
+  // 实时同步勋章（新获得的会写进生涯日志）
+  try { syncMedals(s); } catch (e) {}
 
   if (s.st.health <= 0) finishCareer(s, '健康原因退役');
 }
@@ -767,6 +1455,8 @@ function applyOption(s, ev, opt) {
   }
   if (opt.flag) s.flags[opt.flag] = true;
   if (opt.risky) s.flags.riskyCount = (s.flags.riskyCount || 0) + 1;
+  if (opt.__marry) applyMarriage(s, opt.__marry);
+  if (opt.__kid) applyKid(s, opt.__kid);
 
   // NPC 事件：改变具体 NPC 的好感度与履历
   if (opt.npc && opt.npcFx) {
@@ -947,8 +1637,13 @@ const GRADE_MUL = { S: 1.8, A: 1.4, B: 1.0, C: 0.55, D: 0.15 };
 /* 结算一次任务推演 */
 function resolveTaskRun(s, run) {
   const t = run.task;
+  const d = diffOf(s);
   const pv = taskPreview(s, run);
-  const score = pv.score * rnd(0.92, 1.08);
+  // 连败加压：最近两次 C/D 会拉低本次评分并抬高风险
+  const streak = s.failStreak || 0;
+  let score = pv.score * rnd(0.92, 1.08);
+  if (streak >= 2) score *= 0.95;
+  if (streak >= 3 && d.failStreakRisk) score *= 0.93;
   const grade = gradeOf(score);
 
   const merit = Math.round(t.merit * GRADE_MUL[grade]);
@@ -962,9 +1657,14 @@ function resolveTaskRun(s, run) {
 
   applyEffects(s, { merit: merit, sp: spGain });
 
-  // 成就追踪
+  // 成就与勋章追踪
+  s.flags.taskCount = (s.flags.taskCount || 0) + 1;
   if (grade === 'S') s.flags.achS = (s.flags.achS || 0) + 1;
+  if (grade === 'A') s.flags.achA = (s.flags.achA || 0) + 1;
   if (grade === 'D') s.flags.achD = (s.flags.achD || 0) + 1;
+  // 连败计数
+  if (grade === 'C' || grade === 'D') s.failStreak = (s.failStreak || 0) + 1;
+  else s.failStreak = 0;
 
   if (grade === 'S') {
     result.prestige = 4; result.morale = 4;
@@ -994,10 +1694,13 @@ function resolveTaskRun(s, run) {
 
   if (t.flag) s.flags[t.flag] = true;
 
-  // 风险判定
-  const risk = pv.risk;
+  // 风险判定（难度会抬高风险；连败再叠加）
+  let risk = clamp(pv.risk + d.riskAdd, 0, 0.62);
+  if (streak >= 2) risk += 0.02;
+  if (streak >= 3 && d.failStreakRisk) risk += 0.04;
   if (Math.random() < risk) {
-    const severe = Math.random() < 0.22;
+    const severeBase = 0.18 + d.riskAdd + (streak >= 3 ? 0.08 : 0);
+    const severe = Math.random() < severeBase;
     const hpLoss = severe ? ri(10, 18) : ri(3, 9);
     applyEffects(s, { st: { health: -hpLoss, morale: -3 } });
     s.injuryCount++;
@@ -1007,17 +1710,34 @@ function resolveTaskRun(s, run) {
       ? ' 你在任务中负了重伤，被紧急后送，休养了很久。'
       : ' 你在任务中受了点伤，简单包扎后又回到了队伍里。';
     pushLog(s, t.name, '负伤（' + result.injury + '），健康 −' + hpLoss, 'bad');
+    unitTick(s, { losses: severe ? 2 : 1 });
 
-    if (severe && s.st.health < 22 && Math.random() < 0.15) {
+    // 牺牲：淬火 + 连败 + 重伤 + 低健康时才有真实威胁
+    const deathP = (severe && s.st.health < 28 ? 0.12 : 0)
+      + (s.difficulty === 'hell' && streak >= 3 && severe ? 0.10 : 0)
+      + (s.difficulty === 'hell' && s.st.health < 18 ? 0.08 : 0);
+    if (severe && Math.random() < deathP) {
       result.dead = true;
       s.flags.martyr = true;
       finishCareer(s, '执行任务中牺牲');
       return result;
     }
+  } else if (grade === 'S' || grade === 'A') {
+    unitTick(s, { honor: grade === 'S' ? 3 : 1 });
   }
 
-  pushLog(s, t.name, '评价 ' + grade + '，功勋 +' + merit, grade === 'S' ? 'gold' : grade === 'D' ? 'bad' : 'good');
-  pushHistory(s, t.name, '评价 ' + grade + ' · 功勋 +' + merit, grade === 'S' ? 'gold' : '');
+  // 难度影响任务功勋
+  if (result.merit) {
+    const adj = Math.round(result.merit * (diffOf(s).taskMerit - 1));
+    if (adj) {
+      s.merit = Math.max(0, s.merit + adj);
+      result.merit += adj;
+    }
+  }
+
+  pushLog(s, t.name, '评价 ' + grade + '，功勋 +' + result.merit, grade === 'S' ? 'gold' : grade === 'D' ? 'bad' : 'good');
+  pushHistory(s, t.name, '评价 ' + grade + ' · 功勋 +' + result.merit, grade === 'S' ? 'gold' : '');
+  recordCareerTrack(s);
   return result;
 }
 
@@ -1032,13 +1752,20 @@ function autoDeploy(run) {
 }
 
 /* 自动决断：在可承受范围内选收益最高的 */
-function autoDecide(run, decision) {
+function autoDecide(run, decision, gameState) {
+  // 淬火难度：偶发“上头”，专挑高收益高风险项
+  if (gameState && gameState.difficulty === 'hell' && Math.random() < (diffOf(gameState).autoBlunder || 0.15)) {
+    const risky = decision.options.filter(o => (o.risk || 0) > 0.05);
+    if (risky.length) {
+      return risky.slice().sort((a, b) => (b.score || 0) - (a.score || 0))[0];
+    }
+  }
   let best = null, bestScore = -99;
   decision.options.forEach(o => {
     const need = o.need || 0;
     if (need > run.alloc.reserve - run.reserveUsed) return;
-    const s = (o.score || 0) - (o.risk || 0) * 1.2;
-    if (s > bestScore) { bestScore = s; best = o; }
+    const sc = (o.score || 0) - (o.risk || 0) * 1.2;
+    if (sc > bestScore) { bestScore = sc; best = o; }
   });
   if (!best) best = decision.options[0];
   return best;
@@ -1048,7 +1775,7 @@ function autoDecide(run, decision) {
 function resolveTask(s, task) {
   const run = autoDeploy(createTaskRun(s, task));
   (task.decisions || []).forEach(d => {
-    const opt = autoDecide(run, d);
+    const opt = autoDecide(run, d, s);
     run.reserveUsed += (opt.need || 0);
     run.decisions.push(opt);
     run.decisionLog.push({ text: d.text, choice: opt.label });
@@ -1077,6 +1804,7 @@ function effectiveNeed(s, nextIdx) {
   const rk = myRank(s);
   let need = RANKS[nextIdx].need * (0.88 + 0.28 * rk.pct);
   if (s.flags && s.flags.no_grassroots && nextIdx <= 11) need *= (s.enlistNeedMul || 1.2);
+  need *= diffOf(s).needMul;
   return Math.round(need);
 }
 
@@ -1122,8 +1850,15 @@ function applyPromotion(s, pr) {
   s.sp += 2;
   s.st.prestige = clamp(s.st.prestige + 1.5, 0, 100);
   s.st.morale = clamp(s.st.morale + 2, 0, 100);
+  if (s.unit) {
+    s.unit.honor += 1;
+    s.unit.cohesion = clamp(s.unit.cohesion + 3, 0, 100);
+  }
   pushLog(s, '晋升', '由' + pr.from + '晋升为' + pr.to, 'gold');
   pushHistory(s, '晋升' + pr.to, '由' + pr.from + '晋升为' + pr.to + '，授' + pr.to + '军衔', 'rank');
+  // 军衔晋升后重新审视职务
+  reviewPosition(s);
+  recordCareerTrack(s);
 }
 
 /* ---------- 结局 ---------- */
@@ -1134,24 +1869,179 @@ function finishCareer(s, reason) {
   const e = ENDINGS.find(x => x.cond(s));
   s.ending = e || ENDINGS[ENDINGS.length - 1];
   pushHistory(s, '生涯结束', reason, 'bad');
-  try { commitAchievements(s); commitLegacy(s); } catch (err) {}
+  try {
+    syncMedals(s, true);
+    commitAchievements(s);
+    commitLegacy(s);
+  } catch (err) {}
 }
 
-/* ---------- 存档 ---------- */
-const SAVE_KEY = 'jiangxing_zhilu_save_v2';
-function saveGame(s) {
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify(s)); return true; }
-  catch (e) { return false; }
+/* ---------- 存档（6 个生涯槽） ---------- */
+const SAVE_KEY = 'jiangxing_zhilu_save_v2';          // 旧单档，用于一次性迁移
+const SAVE_SLOT_COUNT = 6;
+const SAVE_SLOT_ACTIVE = 'jiangxing_zhilu_active_slot';
+const SAVE_SLOT_PREFIX = 'jiangxing_zhilu_slot_';
+
+function slotKey(n) {
+  const i = parseInt(n, 10);
+  if (!(i >= 1 && i <= SAVE_SLOT_COUNT)) return null;
+  return SAVE_SLOT_PREFIX + i;
 }
-function loadGame() {
+
+function getActiveSlot() {
+  try {
+    const v = parseInt(localStorage.getItem(SAVE_SLOT_ACTIVE), 10);
+    if (v >= 1 && v <= SAVE_SLOT_COUNT) return v;
+  } catch (e) {}
+  return 1;
+}
+
+function setActiveSlot(n) {
+  const i = parseInt(n, 10);
+  if (!(i >= 1 && i <= SAVE_SLOT_COUNT)) return false;
+  try { localStorage.setItem(SAVE_SLOT_ACTIVE, String(i)); } catch (e) {}
+  return true;
+}
+
+function migrateLegacySave() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return;
+    const k1 = slotKey(1);
+    if (!localStorage.getItem(k1)) {
+      localStorage.setItem(k1, raw);
+    }
+    localStorage.removeItem(SAVE_KEY);
+  } catch (e) {}
+}
+
+function slotMetaFrom(s) {
+  if (!s) return null;
+  return {
+    name: s.name || '无名',
+    rank: (RANKS[s.rankIdx] || {}).name || '—',
+    position: (POSITION_MAP[s.positionId] || {}).name || '',
+    year: s.serviceYear || s.year || 1,
+    difficulty: DIFFICULTIES[s.difficulty] ? DIFFICULTIES[s.difficulty].name : '标准',
+    ended: !!s.ended,
+    ending: s.ending ? s.ending.name : '',
+    merit: Math.round(s.merit || 0),
+    savedAt: s.savedAt || 0
+  };
+}
+
+function readSlotRaw(n) {
+  const k = slotKey(n);
+  if (!k) return null;
+  try {
+    const raw = localStorage.getItem(k);
     if (!raw) return null;
     return JSON.parse(raw);
   } catch (e) { return null; }
 }
+
+function writeSlotRaw(n, s) {
+  const k = slotKey(n);
+  if (!k || !s) return false;
+  try {
+    s.slot = parseInt(n, 10);
+    s.savedAt = Date.now();
+    localStorage.setItem(k, JSON.stringify(s));
+    return true;
+  } catch (e) { return false; }
+}
+
+function listSlots() {
+  migrateLegacySave();
+  const list = [];
+  for (let i = 1; i <= SAVE_SLOT_COUNT; i++) {
+    const s = readSlotRaw(i);
+    list.push({
+      id: i,
+      empty: !s,
+      active: getActiveSlot() === i,
+      meta: slotMetaFrom(s)
+    });
+  }
+  return list;
+}
+
+function loadSlot(n) {
+  migrateLegacySave();
+  const s = readSlotRaw(n);
+  if (!s) return null;
+  return normalizeSave(s);
+}
+
+function deleteSlot(n) {
+  const k = slotKey(n);
+  if (!k) return false;
+  try { localStorage.removeItem(k); return true; } catch (e) { return false; }
+}
+
+function pickEmptySlot() {
+  for (let i = 1; i <= SAVE_SLOT_COUNT; i++) {
+    if (!readSlotRaw(i)) return i;
+  }
+  return null;
+}
+
+function normalizeSave(s) {
+  if (!s || typeof s !== 'object') return s;
+  if (!s.difficulty || !DIFFICULTIES[s.difficulty]) s.difficulty = 'normal';
+  if (s.sfxOn == null) s.sfxOn = true;
+  if (!s.notified) s.notified = {};
+  if (!s.flags) s.flags = {};
+  if (!s.careerTrack) s.careerTrack = [];
+  if (!s.usedEvents) s.usedEvents = [];
+  if (!s.pendingEchoes) s.pendingEchoes = [];
+  if (!s.pendingChains) s.pendingChains = [];
+  if (!s.log) s.log = [];
+  if (!s.history) s.history = [];
+  if (!s.injuryCount) s.injuryCount = 0;
+  if (s.heir == null) s.heir = 0;
+  if (!s.positionId || !POSITION_MAP[s.positionId]) s.positionId = 'p_soldier';
+  if (s.positionYear == null) s.positionYear = 1;
+  if (!s.familyInfo) {
+    s.familyInfo = { married: false, spouse: '', spouseTag: '', kids: 0, kidNames: [], tension: 0 };
+  }
+  if (!s.unit) initUnit(s);
+  if (!s.lastEraId) s.lastEraId = (eraForYear(s.year || 1) || {}).id;
+  if (!s.rivals || !s.rivals.length) initRivals(s);
+  s.rivals.forEach(r => {
+    if (!r.style) {
+      r.style = RIVAL_STYLE_KEYS[Math.floor(Math.random() * RIVAL_STYLE_KEYS.length)];
+      r.styleName = (RIVAL_STYLES[r.style] || RIVAL_STYLES.balanced).name;
+      r.prestige = r.prestige != null ? r.prestige : rnd(18, 32);
+      r.discipline = r.discipline != null ? r.discipline : rnd(58, 72);
+      r.ambition = r.ambition != null ? r.ambition : rnd(0.7, 1.3);
+      r.heat = r.heat || 0;
+      r.rankIdx = r.rankIdx != null ? r.rankIdx : rivalRankIdx(r.merit || 0);
+    }
+  });
+  if (!s.usedActions) s.usedActions = {};
+  if (s.failStreak == null) s.failStreak = 0;
+  if (s.ap == null) s.ap = STAGES[s.stage] ? STAGES[s.stage].ap : 5;
+  if (s.apMax == null) s.apMax = s.ap;
+  if (!s.slot) s.slot = getActiveSlot();
+  return s;
+}
+
+function saveGame(s) {
+  migrateLegacySave();
+  const n = (s && s.slot) || getActiveSlot();
+  return writeSlotRaw(n, s);
+}
+
+function loadGame() {
+  migrateLegacySave();
+  const n = getActiveSlot();
+  return loadSlot(n);
+}
+
 function clearSave() {
-  try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+  // 只清当前槽，不动其他 5 个
+  deleteSlot(getActiveSlot());
 }
 
 /* ============================================================
@@ -1171,7 +2061,61 @@ function saveAchv(a) {
   try { localStorage.setItem(ACHV_KEY, JSON.stringify(a)); } catch (e) {}
 }
 function resetAchv() {
-  try { localStorage.removeItem(ACHV_KEY); localStorage.removeItem(LEGACY_KEY); } catch (e) {}
+  try {
+    localStorage.removeItem(ACHV_KEY);
+    localStorage.removeItem(LEGACY_KEY);
+    localStorage.removeItem(MEDAL_KEY);
+  } catch (e) {}
+}
+
+/* ---------- 勋章墙（跨周目） ---------- */
+const MEDAL_KEY = 'jiangxing_zhilu_medals_v1';
+
+function loadMedals() {
+  try {
+    const raw = localStorage.getItem(MEDAL_KEY);
+    const o = raw ? JSON.parse(raw) : null;
+    if (o && o.unlocked) return o;
+  } catch (e) {}
+  return { unlocked: [], gotAt: {} };
+}
+
+function saveMedals(store) {
+  try { localStorage.setItem(MEDAL_KEY, JSON.stringify(store)); } catch (e) {}
+}
+
+function evaluateMedals(s) {
+  const list = [];
+  MEDALS.forEach(m => {
+    let ok = false;
+    try { ok = !!m.cond(s); } catch (e) { ok = false; }
+    if (ok) list.push(m);
+  });
+  return list;
+}
+
+/* 把当前生涯符合条件的勋章写入收藏；返回本次新获得的列表 */
+function syncMedals(s, silent) {
+  const store = loadMedals();
+  const fresh = [];
+  evaluateMedals(s).forEach(m => {
+    if (store.unlocked.indexOf(m.id) >= 0) return;
+    store.unlocked.push(m.id);
+    if (!store.gotAt) store.gotAt = {};
+    store.gotAt[m.id] = {
+      year: s.year || s.serviceYear || 1,
+      name: s.name || '',
+      rank: (RANKS[s.rankIdx] || {}).name || ''
+    };
+    fresh.push(m);
+    if (!silent) pushLog(s, '荣获勋章', m.name + ' · ' + m.desc, 'gold');
+  });
+  if (fresh.length) saveMedals(store);
+  return fresh;
+}
+
+function medalOwned(id) {
+  return loadMedals().unlocked.indexOf(id) >= 0;
 }
 
 function evaluateAchievements(s) {
@@ -1248,4 +2192,88 @@ function legacySummary() {
   const rec = loadLegacy();
   if (!rec || !rec.last) return null;
   return rec;
+}
+
+/* ============================================================
+   存档导出 / 导入（混淆加密）
+   流程：JSON → UTF-8 → 滚动异或（密钥+位置）→ Base64 → 前缀包装
+   ============================================================ */
+const SAVE_PACK_PREFIX = 'JXZSAVE1:';
+const SAVE_PACK_KEY = '将星之路·军事生涯模拟@2026#jiangxing-zhilu';
+
+function packBytes(u8, key) {
+  const kb = new TextEncoder().encode(key);
+  const out = new Uint8Array(u8.length);
+  for (let i = 0; i < u8.length; i++) {
+    out[i] = (u8[i] ^ kb[i % kb.length] ^ ((i * 31 + 17) & 0xff)) & 0xff;
+  }
+  return out;
+}
+
+function b64FromU8(u8) {
+  let s = '';
+  for (let i = 0; i < u8.length; i++) s += String.fromCharCode(u8[i]);
+  // 标准 Base64 后再做一次字符打乱，增加肉眼不可读性
+  const b64 = btoa(s);
+  return b64.replace(/=/g, '').split('').reverse().join('');
+}
+
+function u8FromB64(str) {
+  const padded = str.split('').reverse().join('');
+  const pad = (4 - (padded.length % 4)) % 4;
+  const b64 = padded + '='.repeat(pad);
+  const bin = atob(b64);
+  const u8 = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  return u8;
+}
+
+/* 将当前存档打包成可复制的字符串 */
+function exportSavePack(slotId) {
+  const n = slotId || getActiveSlot();
+  const game = loadSlot(n) || loadGame();
+  const achv = loadAchv();
+  const medals = loadMedals();
+  const legacy = loadLegacy();
+  const payload = {
+    v: 1,
+    exportedAt: Date.now(),
+    slot: n,
+    game: game,
+    achv: achv,
+    medals: medals,
+    legacy: legacy
+  };
+  const json = JSON.stringify(payload);
+  const bytes = new TextEncoder().encode(json);
+  const enc = packBytes(bytes, SAVE_PACK_KEY);
+  return SAVE_PACK_PREFIX + b64FromU8(enc);
+}
+
+/* 解析导出串；成功则写回本地并返回 true */
+function importSavePack(text, targetSlot) {
+  if (!text || typeof text !== 'string') return { ok: false, reason: '内容为空' };
+  const t = text.trim().replace(/\s+/g, '');
+  if (t.indexOf(SAVE_PACK_PREFIX) !== 0) return { ok: false, reason: '不是有效的将星之路存档' };
+  try {
+    const body = t.slice(SAVE_PACK_PREFIX.length);
+    const enc = u8FromB64(body);
+    const raw = packBytes(enc, SAVE_PACK_KEY); // 异或是对合运算
+    const json = new TextDecoder().decode(raw);
+    const payload = JSON.parse(json);
+    if (!payload || payload.v !== 1) return { ok: false, reason: '存档版本不兼容' };
+    const n = targetSlot || getActiveSlot();
+    if (payload.game) {
+      const g = normalizeSave(payload.game);
+      g.slot = n;
+      writeSlotRaw(n, g);
+      setActiveSlot(n);
+    }
+    if (payload.achv) localStorage.setItem(ACHV_KEY, JSON.stringify(payload.achv));
+    if (payload.medals) localStorage.setItem(MEDAL_KEY, JSON.stringify(payload.medals));
+    if (payload.legacy) localStorage.setItem(LEGACY_KEY, JSON.stringify(payload.legacy));
+    return { ok: true, slot: n, name: payload.game && payload.game.name, ended: payload.game && payload.game.ended };
+  } catch (e) {
+    return { ok: false, reason: '解密失败，存档可能已损坏或被篡改' };
+  }
 }

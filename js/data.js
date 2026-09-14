@@ -55,9 +55,9 @@ const RANKS = [
   { name: '上校',       need: 14500, stage: 'field' },
   { name: '大校',       need: 19000, stage: 'field' },
   { name: '少将',       need: 25000, stage: 'general' },
-  { name: '中将',       need: 34000, stage: 'general' },
-  { name: '上将',       need: 100000, stage: 'marshal' },
-  { name: '大元帅',     need: 100000, stage: 'marshal' }
+  { name: '中将',       need: 38000, stage: 'general' },
+  { name: '上将',       need: 130000, stage: 'marshal' },
+  { name: '大元帅',     need: 165000, stage: 'marshal' }
 ];
 
 /* 高阶军衔的复合条件：功勋之外，还须威望、纪律与传承同时达标
@@ -309,7 +309,54 @@ const ACTIONS = [
     fx:{ merit:800, st:{prestige:3}, flag:'reform' } },
   { id:'grandBid', name:'问鼎元帅', ap:4, min:5, reqRank:18, cat:'管理',
     desc:'向最高荣誉发起冲击 · 消耗极大，且会被议论',
-    fx:{ merit:4500, st:{ prestige:6, health:-3, morale:-2 } } }
+    fx:{ merit:4500, st:{ prestige:6, health:-3, morale:-2 } } },
+  { id:'qjBlueprint', name:'筹划强军方略', ap:3, min:5, reqRank:18, cat:'管理',
+    desc:'牵头拟制长远建设规划 · 功勋 +2200 · 专业能力 +4 · 可能触动格局',
+    fx:{ merit:2200, dv:{ professional:4 }, st:{ prestige:4 }, flag:'reform' } },
+
+  /* ---------- 内容扩展：补齐中后期日常与专业线 ---------- */
+  { id:'nightTrain', name:'夜间训练', ap:2, min:0, cat:'训练',
+    desc:'军事素养 +3 · 意志 +2 · 健康 −2',
+    fx:{ dv:{military:3}, attr:{yizhi:2}, st:{health:-2} } },
+  { id:'partyAct', name:'党团活动', ap:1, min:0, cat:'政治',
+    desc:'政治素养 +2 · 信念 +2',
+    fx:{ dv:{political:2}, attr:{xinnian:2} } },
+  { id:'writeHome', name:'写家书', ap:1, min:0, cat:'生活',
+    desc:'家庭 +4 · 信念 +1',
+    fx:{ st:{family:4}, attr:{xinnian:1} } },
+  { id:'rehab', name:'体能康复', ap:1, min:1, cat:'生活',
+    desc:'健康 +5 · 体魄 +1 · 士气 +1',
+    fx:{ st:{health:5, morale:1}, attr:{tibo:1} } },
+  { id:'teachClass', name:'带新兵教学', ap:2, min:2, cat:'管理',
+    desc:'统率 +2 · 政治素养 +2 · 威望 +2 · 功勋 +100',
+    fx:{ attr:{tongshuai:2}, dv:{political:2}, st:{prestige:2}, merit:100 } },
+  { id:'equipCheck', name:'装备普查', ap:2, min:2, cat:'管理',
+    desc:'专业能力 +4 · 纪律 +2 · 功勋 +150',
+    fx:{ dv:{professional:4, discipline:2}, merit:150 } },
+  { id:'civilCoord', name:'军地协调', ap:2, min:3, cat:'社交',
+    desc:'魅力 +3 · 威望 +3 · 军地关系融洽',
+    fx:{ attr:{meili:3}, st:{prestige:3}, dv:{professional:2} } },
+  { id:'infoDrill', name:'信息化演练', ap:2, min:3, cat:'军事',
+    desc:'智谋 +3 · 专业能力 +3 · 技能点 +1',
+    fx:{ attr:{zhimou:3}, dv:{professional:3}, sp:1 } },
+  { id:'thinkTank', name:'智囊咨询', ap:3, min:4, cat:'军事',
+    desc:'智谋 +4 · 专业能力 +3 · 功勋 +550 · 首长信任 +3',
+    fx:{ attr:{zhimou:4}, dv:{professional:3}, merit:550, st:{trust:3} } },
+  { id:'milCivil', name:'军民融合项目', ap:3, min:4, cat:'管理',
+    desc:'威望 +4 · 魅力 +3 · 功勋 +650',
+    fx:{ st:{prestige:4}, attr:{meili:3}, merit:650 } },
+  { id:'writeDoctrine', name:'条令编修', ap:3, min:5, cat:'院校',
+    desc:'专业能力 +5 · 威望 +5 · 功勋 +900 · 可能引发讨论',
+    fx:{ dv:{professional:5}, st:{prestige:5}, merit:900, flag:'reform' } },
+  { id:'majorScene', name:'重大任务值守', ap:3, min:4, cat:'军事',
+    desc:'威望 +5 · 纪律 +3 · 功勋 +1000 · 健康 −3',
+    fx:{ st:{prestige:5, health:-3}, dv:{discipline:3}, merit:1000 } },
+  { id:'writeMemoir', name:'整理回忆录', ap:2, min:5, cat:'生活',
+    desc:'信念 +4 · 威望 +3 · 家庭 +2',
+    fx:{ attr:{xinnian:4}, st:{prestige:3, family:2} } },
+  { id:'honorDetail', name:'荣誉仪式任务', ap:2, min:4, cat:'政治',
+    desc:'信念 +5 · 威望 +4 · 政治素养 +3',
+    fx:{ attr:{xinnian:5}, st:{prestige:4}, dv:{political:3} } }
 ];
 
 /* 重大功勋：大元帅的必要条件之一 */
@@ -651,6 +698,176 @@ const TASKS = [
           { label:'连夜补齐材料',           hint:'评价 +6%，风险 +10%', score:0.06, risk:0.10 },
           { label:'用实际成效说话',         hint:'需要 1 点预备队 · 评价 +10%', need:1, score:0.10 },
           { label:'先内部整改再上报',       hint:'评价 +3%，风险 +4%', score:0.03, risk:0.04 }
+        ] }
+    ]
+  },
+
+  /* ---------- 内容扩展任务 ---------- */
+  {
+    id:'tk_night', name:'夜间渗透演练', layer:'分队层', min:1, max:4, weight:10,
+    merit:850, risk:0.12, attrs:['yizhi','tibo','zhimou'], skill:'zhencha', kind:'combat',
+    text:'没有月光，电台保持静默，你只有一次接近目标的机会。',
+    brief:'合成营夜间课目考核，你率分队执行纵深渗透，限时两小时。',
+    deploy:3,
+    fronts:[
+      { key:'main',    name:'渗透路线', demand:2, kind:'score',  hint:'投入越多，越接近目标' },
+      { key:'support', name:'通信与识别', demand:1, kind:'risk', hint:'投入越多，误伤与暴露越少' },
+      { key:'reserve', name:'应急脱身', demand:1, kind:'option', hint:'投入越多，遇险时选择越多' }
+    ],
+    decisions:[
+      { text:'接近目标区时，前方突然出现不明灯光，疑似蓝军潜伏哨。',
+        options:[
+          { label:'绕道隐蔽前进',           hint:'评价 +6%，耗时增加', score:0.06 },
+          { label:'果断处置，继续任务',     hint:'评价 +14%，风险 +12%', score:0.14, risk:0.12 },
+          { label:'使用预备组佯动',         hint:'需要 1 点预备队 · 评价 +9%', need:1, score:0.09 },
+          { label:'上报并中止渗透',         hint:'评价 −8%，作风纪律 +4', score:-0.08, disc:4 }
+        ] }
+    ]
+  },
+  {
+    id:'tk_quake', name:'抗震救灾', layer:'分队层', min:2, max:5, weight:8,
+    merit:1400, risk:0.16, attrs:['tibo','yizhi','tongshuai'], skill:'zuzhi', kind:'rescue', flag:'rescue',
+    text:'废墟下还有生命迹象，黄金七十二小时正在流逝。',
+    brief:'驻地附近发生强震，你部奉命连夜开进，负责最危险的搜救片区。',
+    deploy:4,
+    fronts:[
+      { key:'main',    name:'重点搜救', demand:3, kind:'score',  hint:'投入越多，救出的人越多' },
+      { key:'support', name:'医疗后送', demand:1, kind:'risk',   hint:'投入越多，二次伤亡越少' },
+      { key:'reserve', name:'重型机械', demand:1, kind:'option', hint:'投入越多，破拆手段越多' }
+    ],
+    decisions:[
+      { text:'余震导致一栋危楼二次坍塌，有战士被埋，附近还有群众呼救。',
+        options:[
+          { label:'先救战士',               hint:'士气 +6，评价 +5%', score:0.05, fx:{ st:{ morale:6 } } },
+          { label:'先救群众',               hint:'信念 +5，评价 +10%', score:0.10, fx:{ attr:{ xinnian:5 } }, flag:'saved_village' },
+          { label:'分组同时搜救',           hint:'需要 1 点预备队 · 评价 +12%', need:1, score:0.12 },
+          { label:'等专业力量到位',         hint:'评价 −6%，风险 −5%', score:-0.06, risk:-0.05 }
+        ] }
+    ]
+  },
+  {
+    id:'tk_cyber', name:'网络攻防演练', layer:'战役层', min:3, max:6, weight:9,
+    merit:2600, risk:0.08, attrs:['zhimou','yizhi'], skill:'canmou', kind:'normal', flag:'cyber',
+    text:'屏幕上的每一次跳动，都可能改写战场态势。',
+    brief:'战区组织网络空间防卫演练，你负责指挥所信息系统的攻防对抗。',
+    deploy:4,
+    fronts:[
+      { key:'main',    name:'态势感知', demand:3, kind:'score',  hint:'投入越多，判断越准' },
+      { key:'support', name:'系统加固', demand:1, kind:'risk',   hint:'投入越多，被瘫痪概率越低' },
+      { key:'reserve', name:'应急切换', demand:1, kind:'option', hint:'投入越多，备用手段越多' }
+    ],
+    decisions:[
+      { text:'蓝军对指挥网发起高强度干扰，主用链路出现丢包。',
+        options:[
+          { label:'切换备用链路继续',       hint:'评价 +8%', score:0.08 },
+          { label:'反向追踪，实施反击',     hint:'评价 +16%，风险 +10%', score:0.16, risk:0.10 },
+          { label:'启用预置应急预案',       hint:'需要 1 点预备队 · 评价 +10%', need:1, score:0.10 },
+          { label:'上报并请求支援',         hint:'评价 −4%，作风纪律 +3', score:-0.04, disc:3 }
+        ] }
+    ]
+  },
+  {
+    id:'tk_medical', name:'卫勤保障演习', layer:'分队层', min:2, max:5, weight:8,
+    merit:1500, risk:0.09, attrs:['zhimou','meili'], skill:'houqin', kind:'normal',
+    text:'伤员通道一旦堵住，前面打得再好也白搭。',
+    brief:'实兵演习中你负责卫勤保障，要在复杂地形上建立伤员后送线。',
+    deploy:4,
+    fronts:[
+      { key:'main',    name:'救护所开设', demand:3, kind:'score', hint:'投入越多，救治效率越高' },
+      { key:'support', name:'后送通道', demand:1, kind:'risk',  hint:'投入越多，后送越顺畅' },
+      { key:'reserve', name:'血浆与器材', demand:1, kind:'option', hint:'投入越多，抢救手段越足' }
+    ],
+    decisions:[
+      { text:'同时送来三名重伤员，血浆只够抢救两人。',
+        options:[
+          { label:'按伤情轻重排序抢救',     hint:'评价 +10%', score:0.10 },
+          { label:'全力抢救最危重的',       hint:'评价 +6%，风险 +6%', score:0.06, risk:0.06 },
+          { label:'紧急调用预备血浆',       hint:'需要 1 点预备队 · 评价 +12%', need:1, score:0.12 },
+          { label:'请上级协调地方血站',     hint:'评价 +5%', score:0.05 }
+        ] }
+    ]
+  },
+  {
+    id:'tk_school', name:'院校教学比武', layer:'战役层', min:3, max:5, weight:8,
+    merit:2800, risk:0.05, attrs:['zhimou','meili'], skill:'daibing', kind:'contest',
+    text:'讲台也是战场，讲不好，学员就会在战场上吃亏。',
+    brief:'你代表部队参加院校教学比武，课题是联合作战基础。',
+    deploy:4,
+    fronts:[
+      { key:'main',    name:'课程设计', demand:3, kind:'score',  hint:'投入越多，课越扎实' },
+      { key:'support', name:'案例与想定', demand:1, kind:'risk', hint:'投入越多，临场越稳' },
+      { key:'reserve', name:'学员互动', demand:1, kind:'option', hint:'投入越多，应变越从容' }
+    ],
+    decisions:[
+      { text:'有专家当场质疑你的战例引用是否准确。',
+        options:[
+          { label:'承认表述不严谨并修正',   hint:'作风纪律 +5，评价 +3%', score:0.03, disc:5 },
+          { label:'用原始史料现场回应',     hint:'评价 +12%', score:0.12 },
+          { label:'请助教调取资料',         hint:'需要 1 点预备队 · 评价 +8%', need:1, score:0.08 },
+          { label:'坚持原观点',             hint:'评价 +6%，风险 +8%', score:0.06, risk:0.08 }
+        ] }
+    ]
+  },
+  {
+    id:'tk_major', name:'重大活动安保', layer:'战役层', min:3, max:6, weight:9,
+    merit:3200, risk:0.10, attrs:['tongshuai','yizhi'], skill:'zuzhi', kind:'normal',
+    text:'容不得半点闪失，出了问题就是政治问题。',
+    brief:'你负责一项重大活动的安全警戒与应急处置，全程不打招呼检查。',
+    deploy:4,
+    fronts:[
+      { key:'main',    name:'核心区域', demand:3, kind:'score',  hint:'投入越多，核心越稳' },
+      { key:'support', name:'外围封控', demand:1, kind:'risk',   hint:'投入越多，漏洞越少' },
+      { key:'reserve', name:'应急分队', demand:1, kind:'option', hint:'投入越多，处置越快' }
+    ],
+    decisions:[
+      { text:'开幕前一小时，外围发现可疑无人飞行器。',
+        options:[
+          { label:'立即干扰迫降',           hint:'评价 +10%', score:0.10 },
+          { label:'跟踪观察，暂不处置',     hint:'评价 +4%，风险 +10%', score:0.04, risk:0.10 },
+          { label:'派应急分队处置',         hint:'需要 1 点预备队 · 评价 +12%', need:1, score:0.12 },
+          { label:'上报并启动预案降级',     hint:'评价 −3%，作风纪律 +5', score:-0.03, disc:5 }
+        ] }
+    ]
+  },
+  {
+    id:'tk_recruit_train', name:'新兵入伍训练组织', layer:'分队层', min:1, max:3, weight:9,
+    merit:700, risk:0.06, attrs:['tongshuai','meili'], skill:'daibing', kind:'normal',
+    text:'一茬新兵刚下连，底子参差不齐，两个月后要接受考核。',
+    brief:'你负责组织入伍训练，要让全连新兵尽快形成战斗力。',
+    deploy:3,
+    fronts:[
+      { key:'main',    name:'课目落实', demand:2, kind:'score',  hint:'投入越多，考核成绩越好' },
+      { key:'support', name:'思想稳定', demand:1, kind:'risk',   hint:'投入越多，逃兵与伤病越少' },
+      { key:'reserve', name:'骨干帮带', demand:1, kind:'option', hint:'投入越多，后进转化越快' }
+    ],
+    decisions:[
+      { text:'几名新兵想家情绪严重，夜里偷偷抹眼泪。',
+        options:[
+          { label:'组织谈心，骨干结对',     hint:'评价 +10%', score:0.10 },
+          { label:'加大训练强度压过去',     hint:'评价 +8%，风险 +10%', score:0.08, risk:0.10 },
+          { label:'请家属来队做工作',       hint:'需要 1 点预备队 · 评价 +12%', need:1, score:0.12 },
+          { label:'如实上报，申请缓训',     hint:'评价 −5%', score:-0.05 }
+        ] }
+    ]
+  },
+  {
+    id:'tk_equip_field', name:'装备野外抢修', layer:'分队层', min:2, max:5, weight:8,
+    merit:1300, risk:0.09, attrs:['zhimou','tibo'], skill:'zhuangbei', kind:'normal',
+    text:'演习途中多台装备趴窝，天黑前修不好，整个梯队都会堵在路上。',
+    brief:'你带抢修分队跟进保障，要在时限内恢复装备完好率。',
+    deploy:4,
+    fronts:[
+      { key:'main',    name:'主战装备', demand:3, kind:'score',  hint:'投入越多，主战装备恢复越快' },
+      { key:'support', name:'器材与油料', demand:1, kind:'risk', hint:'投入越多，误判与返工越少' },
+      { key:'reserve', name:'厂家技术支援', demand:1, kind:'option', hint:'投入越多，疑难故障越有办法' }
+    ],
+    decisions:[
+      { text:'关键备件缺货，厂家说最快也要半夜才能送到。',
+        options:[
+          { label:'拆东墙补西墙，先保主攻', hint:'评价 +10%', score:0.10 },
+          { label:'连夜自制替代件',         hint:'评价 +14%，风险 +8%', score:0.14, risk:0.08 },
+          { label:'启用厂家远程支援',       hint:'需要 1 点预备队 · 评价 +9%', need:1, score:0.09 },
+          { label:'上报并申请推迟开进',     hint:'评价 −6%', score:-0.06 }
         ] }
     ]
   }
@@ -1028,9 +1245,193 @@ const EVENTS = [
     ] }
 ].forEach(e => EVENTS.push(e));
 
+/* ---------- 内容扩展事件 ---------- */
+[
+  {
+    id:'ev_gift', title:'一份厚礼', min:2, max:5, weight:11, once:true,
+    text:'驻地一家企业的负责人托人送来礼品，说是感谢部队支持，希望“多关照”。',
+    options:[
+      { label:'坚决退回，并如实报告',     hint:'纪律 +6 · 首长信任 +4',
+        fx:{ dv:{discipline:6}, st:{trust:4} }, flag:'clean' },
+      { label:'收下但登记上交',           hint:'纪律 +4 · 政治素养 +3',
+        fx:{ dv:{discipline:4, political:3} } },
+      { label:'不好驳面子，先收着',       hint:'无即时损失，但埋下隐患',
+        fx:{ st:{prestige:1} },
+        hidden:{ chance:0.55, note:'此事后来被人提起', dv:{discipline:-8}, st:{trust:-6} },
+        flag:'gift' }
+    ]
+  },
+  {
+    id:'ev_soldier_crisis', title:'深夜来电', min:2, max:4, weight:12, once:true,
+    text:'凌晨，指导员打来电话：一名战士情绪崩溃，正坐在天台边。',
+    options:[
+      { label:'亲自去谈，把人劝下来',     hint:'魅力 +4 · 威望 +5 · 健康 −2',
+        fx:{ attr:{meili:4}, st:{prestige:5, health:-2} }, flag:'saved_soldier' },
+      { label:'稳住现场，等心理骨干到位', hint:'政治素养 +4 · 纪律 +3',
+        fx:{ dv:{political:4, discipline:3} } },
+      { label:'按预案处置并上报',         hint:'纪律 +5 · 首长信任 +3 · 士气 −2',
+        fx:{ dv:{discipline:5}, st:{trust:3, morale:-2} } }
+    ]
+  },
+  {
+    id:'ev_injury', title:'旧伤复发', min:3, max:5, weight:11, once:true,
+    text:'高强度连续作业后，年轻时落下的腰伤又犯了，医生建议静养。',
+    options:[
+      { label:'边治疗边坚持工作',         hint:'意志 +3 · 健康 −5 · 首长信任 +2',
+        fx:{ attr:{yizhi:3}, st:{health:-5, trust:2} } },
+      { label:'听医嘱休整一段时间',       hint:'健康 +6 · 家庭 +3 · 威望 −2',
+        fx:{ st:{health:6, family:3, prestige:-2} } },
+      { label:'申请调离高强度岗位',       hint:'健康 +4 · 首长信任 −4',
+        fx:{ st:{health:4, trust:-4} } }
+    ]
+  },
+  {
+    id:'ev_child_path', title:'孩子的选择', min:3, max:5, weight:10, once:true,
+    text:'孩子高考完，说也想考军校。爱人希望他走另一条路。',
+    options:[
+      { label:'支持他考军校',             hint:'家庭 +3 · 信念 +3 · 士气 +3',
+        fx:{ st:{family:3, morale:3}, attr:{xinnian:3} }, flag:'child_military' },
+      { label:'尊重他自己的选择',         hint:'家庭 +5 · 魅力 +2',
+        fx:{ st:{family:5}, attr:{meili:2} } },
+      { label:'劝他先读地方大学',         hint:'智谋 +2 · 家庭 −2 · 首长信任 +1',
+        fx:{ attr:{zhimou:2}, st:{family:-2, trust:1} } }
+    ]
+  },
+  {
+    id:'ev_media_storm', title:'舆论风波', min:3, max:5, weight:10, once:true,
+    text:'一段演习画面被断章取义发到网上，你的单位成了话题中心。',
+    options:[
+      { label:'公开说明事实经过',         hint:'威望 +4 · 风险',
+        fx:{ st:{prestige:4} },
+        hidden:{ chance:0.35, note:'说明未完全平息议论', st:{trust:-3} } },
+      { label:'请宣传部门统一回应',       hint:'纪律 +3 · 首长信任 +3',
+        fx:{ dv:{discipline:3}, st:{trust:3} } },
+      { label:'不回应，用后续成绩说话',   hint:'威望 +2 · 专业能力 +3',
+        fx:{ st:{prestige:2}, dv:{professional:3} } }
+    ]
+  },
+  {
+    id:'ev_rival_ops', title:'同期的小动作', min:3, max:5, weight:11, once:true,
+    text:'你发现，同期的老对手在汇报材料里有意无意地抬高自己、贬低你的成绩。',
+    options:[
+      { label:'当面把话说开',             hint:'威望 +3 · 搭档默契 −2',
+        fx:{ st:{prestige:3, bond:-2} } },
+      { label:'用完整台账澄清',           hint:'专业能力 +4 · 首长信任 +4',
+        fx:{ dv:{professional:4}, st:{trust:4} } },
+      { label:'不计较，继续做好自己的事', hint:'信念 +4 · 威望 +2',
+        fx:{ attr:{xinnian:4}, st:{prestige:2} } }
+    ]
+  },
+  {
+    id:'ev_early_retire', title:'提前退役邀请', min:4, max:5, weight:9, once:true,
+    text:'地方一家单位开出不错的条件，希望你提前转身。组织也征求你的意见。',
+    options:[
+      { label:'留下，部队更需要我',       hint:'信念 +5 · 首长信任 +5 · 功勋 +400',
+        fx:{ attr:{xinnian:5}, st:{trust:5}, merit:400 } },
+      { label:'认真考虑，但暂不决定',     hint:'智谋 +2 · 家庭 +3',
+        fx:{ attr:{zhimou:2}, st:{family:3} } },
+      { label:'申请转业',                 hint:'家庭 +8 · 士气 −6 · 可能提前结束生涯',
+        fx:{ st:{family:8, morale:-6} }, flag:'wanted_retire' }
+    ]
+  },
+  {
+    id:'ev_honor_title', title:'荣誉称号', min:4, max:6, weight:10, once:true,
+    text:'上级准备授予你一项荣誉称号，需要到处作报告、接受采访。',
+    options:[
+      { label:'接受，并讲真话、不注水',   hint:'威望 +7 · 政治素养 +4 · 健康 −2',
+        fx:{ st:{prestige:7, health:-2}, dv:{political:4} }, flag:'honor_title' },
+      { label:'推给更基层的同志',         hint:'士气 +5 · 威望 +4 · 政治素养 +3',
+        fx:{ st:{morale:5, prestige:4}, dv:{political:3} } },
+      { label:'婉拒，怕耽误战备',         hint:'纪律 +4 · 军事素养 +3 · 首长信任 −2',
+        fx:{ dv:{discipline:4, military:3}, st:{trust:-2} } }
+    ]
+  },
+  {
+    id:'ev_spouse_job', title:'爱人调动', min:3, max:5, weight:10, once:true,
+    text:'爱人工作调动到外地，孩子上学、老人照顾都成了问题。',
+    options:[
+      { label:'支持爱人去，家里我来扛',   hint:'家庭 +4 · 健康 −3 · 士气 −2',
+        fx:{ st:{family:4, health:-3, morale:-2} } },
+      { label:'申请调整驻地或岗位',       hint:'首长信任 −3 · 家庭 +6',
+        fx:{ st:{trust:-3, family:6} } },
+      { label:'请老人暂时过来帮忙',       hint:'家庭 +3 · 士气 +2',
+        fx:{ st:{family:3, morale:2} } }
+    ]
+  },
+  {
+    id:'ev_inspect_talk', title:'谈话函询', min:3, max:6, weight:9, once:true,
+    text:'纪检部门找你谈话，核实一件与你有关的举报线索。',
+    options:[
+      { label:'如实说明全部情况',         hint:'纪律 +6 · 首长信任 +3',
+        fx:{ dv:{discipline:6}, st:{trust:3} } },
+      { label:'请组织全面核查',           hint:'纪律 +4 · 威望 +2',
+        fx:{ dv:{discipline:4}, st:{prestige:2} } },
+      { label:'强调自己不知情',           hint:'无即时收益，有风险',
+        fx:{},
+        hidden:{ chance:0.45, note:'核查发现你知情不报', dv:{discipline:-10}, st:{trust:-8} } }
+    ]
+  }
+].forEach(e => EVENTS.push(e));
+
+/* ---------- 子女成才 / 退役第二人生 ---------- */
+[
+  {
+    id:'ev_kid_choice', title:'孩子的志愿', min:4, max:6, weight:12, once:true,
+    text:'孩子长大了，站在人生的岔路口。他问你：爸，我该怎么走？',
+    options:[
+      { label:'支持他报军校', hint:'家庭 +4 · 信念 +3 · 可能成为接班人',
+        fx:{ st:{ family:4 }, attr:{ xinnian:3 }, heir:1 }, flag:'child_military' },
+      { label:'让他自己闯',   hint:'家庭 +5 · 智谋 +2',
+        fx:{ st:{ family:5 }, attr:{ zhimou:2 } } },
+      { label:'劝他走稳妥的路', hint:'家庭 +3 · 威望 +1',
+        fx:{ st:{ family:3, prestige:1 } } }
+    ]
+  },
+  {
+    id:'ev_kid_grad', title:'孩子毕业典礼', min:5, max:6, weight:10, once:true,
+    text:'你请了半天假，坐在礼堂最后一排。孩子在台上敬礼时，你突然觉得自己老了。',
+    options:[
+      { label:'上台和他合个影', hint:'家庭 +8 · 士气 +4',
+        fx:{ st:{ family:8, morale:4 } } },
+      { label:'默默看完就走',   hint:'信念 +3 · 家庭 +4',
+        fx:{ attr:{ xinnian:3 }, st:{ family:4 } } },
+      { label:'因任务缺席',     hint:'功勋 +300 · 家庭 −6',
+        fx:{ merit:300, st:{ family:-6 } } }
+    ]
+  },
+  {
+    id:'ev_retire_offer', title:'退役前的邀请', min:6, max:6, weight:12, once:true,
+    text:'还没到龄，地方高校和企业都递来了橄榄枝。组织也问你有什么打算。',
+    options:[
+      { label:'服从安排，站好最后一班岗', hint:'纪律 +5 · 威望 +4',
+        fx:{ dv:{ discipline:5 }, st:{ prestige:4 } } },
+      { label:'准备退役后的讲台', hint:'专业能力 +4 · 家庭 +3',
+        fx:{ dv:{ professional:4 }, st:{ family:3 } }, flag:'retire_teach' },
+      { label:'多陪陪家里', hint:'家庭 +8 · 士气 +3',
+        fx:{ st:{ family:8, morale:3 } }, flag:'retire_family' }
+    ]
+  },
+  {
+    id:'ev_second_life', title:'第二人生的预演', min:6, max:6, weight:10, once:true,
+    text:'你去驻地中学讲了一堂国防课。孩子们的眼睛很亮，你讲着讲着，忽然不知道自己更属于哪里。',
+    options:[
+      { label:'把这堂课讲成一堂人生课', hint:'政治素养 +4 · 威望 +3 · 信念 +2',
+        fx:{ dv:{ political:4 }, st:{ prestige:3 }, attr:{ xinnian:2 } } },
+      { label:'只讲装备和战术', hint:'军事素养 +3 · 专业能力 +3',
+        fx:{ dv:{ military:3, professional:3 } } },
+      { label:'讲完就走，不回头', hint:'意志 +3 · 家庭 +2',
+        fx:{ attr:{ yizhi:3 }, st:{ family:2 } } }
+    ]
+  }
+].forEach(e => EVENTS.push(e));
+
 /* ---------- 结局 ----------
    判定顺序即优先级：先命中先结算，因此越特殊、越稀有的结局排在越前面。 */
 const ENDINGS = [
+  { id:'e_qjts', tier:'legend', name:'强军统帅',
+    cond: s => s.rankIdx >= 19 && (s.heir || 0) >= 3 && s.st.prestige >= 75
+      && s.dv.discipline >= 82 && !!s.route && (getPosition(s).level || 0) >= 14,
+    text:'（完全虚构）你站到了这部模拟所能书写的最高处。肩章、岗位、制度与人，在你这里叠成了同一件事。授衔那天没有欢呼，只有很长的沉默——你知道，这不是终点，是把担子交出去的开始。' },
   { id:'e_grand', tier:'legend', name:'大元帅',
     cond: s => s.rankIdx >= 19,
     text:'这个军衔，人民军队的历史上设而未授。它不属于任何一场胜仗，而是属于一整套东西——你带出来的部队、你推行的制度、你培养的人。授衔那天没有人欢呼，只有很长的沉默。' },
@@ -1070,6 +1471,15 @@ const ENDINGS = [
   { id:'e_tough', tier:'plain', name:'边关冷月',
     cond: s => s.flags.tough_area,
     text:'你把最好的那些年留在了高原。那里风大、氧气少，但星空比哪里都亮。' },
+  { id:'e_mentor', tier:'gold', name:'金牌教头',
+    cond: s => s.rankIdx >= 15 && (s.heir || 0) >= 2 && s.st.prestige >= 68,
+    text:'你带出来的干部，一个接一个走上了主官岗位。有人说，部队里最值钱的不是装备，是人——而你一辈子都在做这件事。' },
+  { id:'e_balanced', tier:'gold', name:'铁骨柔情',
+    cond: s => s.rankIdx >= 13 && s.st.family >= 72 && s.st.morale >= 62,
+    text:'军装穿了半辈子，家也没散。这在这个行当里，比肩章更难。' },
+  { id:'e_info', tier:'gold', name:'无形战线',
+    cond: s => s.flags.cyber && s.rankIdx >= 13 && s.dv.professional >= 80,
+    text:'很多人不知道你这些年在忙什么。屏幕前的彻夜、演训场上的静默，都是为了打赢那天不必说出口的仗。' },
   { id:'e_silent', tier:'plain', name:'默默奉献',
     cond: s => s.rankIdx <= 15 && s.st.prestige >= 55,
     text:'你没有走到很高的位置，但你带过的兵都记得你。有些功劳不写在档案里。' },
@@ -1141,7 +1551,52 @@ const OPPORTUNITIES = [
     fx:{ attr:{ zhimou:4 }, dv:{ professional:4 }, merit:900 } },
   { id:'op_oldunit',   name:'回老部队看看', ap:2, min:5, cat:'机会',
     desc:'回当年带过的连队走了走 · 士气 +8 · 信念 +3 · 家庭 +2',
-    fx:{ st:{ morale:8, family:2 }, attr:{ xinnian:3 } } }
+    fx:{ st:{ morale:8, family:2 }, attr:{ xinnian:3 } } },
+  { id:'op_night_ops', name:'夜间突击拉动', ap:2, min:1, cat:'机会',
+    desc:'参加夜间紧急拉动 · 军事素养 +3 · 意志 +2 · 健康 −2',
+    fx:{ dv:{ military:3 }, attr:{ yizhi:2 }, st:{ health:-2 } } },
+  { id:'op_home_visit', name:'家属来队',   ap:1, min:1, cat:'机会',
+    desc:'爱人带孩子来队探亲 · 家庭 +8 · 士气 +4',
+    fx:{ st:{ family:8, morale:4 } } },
+  { id:'op_info_class', name:'信息化集训', ap:2, min:3, cat:'机会',
+    desc:'参加信息系统业务集训 · 专业能力 +4 · 技能点 +3 · 健康 −2',
+    fx:{ dv:{ professional:4 }, sp:3, st:{ health:-2 } }, flag:'cyber' },
+  { id:'op_rescue_call', name:'应急出动',  ap:3, min:2, cat:'机会', merit:900,
+    desc:'驻地突发险情，你带队连夜出动 · 功勋 +900 · 威望 +5 · 健康 −4',
+    fx:{ merit:900, st:{ prestige:5, health:-4 } }, flag:'rescue' },
+  { id:'op_write_book', name:'著书立说',   ap:3, min:4, cat:'机会', merit:1200,
+    desc:'整理带兵心得并出版 · 威望 +6 · 专业能力 +4 · 功勋 +1200',
+    fx:{ st:{ prestige:6 }, dv:{ professional:4 }, merit:1200 } },
+  { id:'op_youth_camp', name:'少年军校辅导', ap:2, min:3, cat:'机会',
+    desc:'给少年军校讲战术启蒙 · 政治素养 +3 · 魅力 +3 · 威望 +2',
+    fx:{ dv:{ political:3 }, attr:{ meili:3 }, st:{ prestige:2 } } },
+  { id:'op_joint_duty', name:'联指值班',   ap:2, min:4, cat:'机会', merit:800,
+    desc:'参加联合指挥所值班 · 军事素养 +4 · 专业能力 +3 · 功勋 +800',
+    fx:{ dv:{ military:4, professional:3 }, merit:800 } },
+  { id:'op_legacy_speech', name:'给新兵团讲课', ap:1, min:5, cat:'机会',
+    desc:'给新兵团讲第一课 · 信念 +4 · 威望 +4 · 士气 +3',
+    fx:{ attr:{ xinnian:4 }, st:{ prestige:4, morale:3 } } },
+  { id:'op_date_night', name:'难得的周末', ap:1, min:1, cat:'机会',
+    desc:'爱人从驻地赶来，你们吃了顿安稳饭 · 家庭 +7 · 士气 +3',
+    fx:{ st:{ family:7, morale:3 } } },
+  { id:'op_kid_school', name:'孩子家长会', ap:1, min:2, cat:'机会',
+    desc:'挤出时间去开了次家长会 · 家庭 +5 · 魅力 +2',
+    fx:{ st:{ family:5 }, attr:{ meili:2 } } },
+  { id:'op_ally_cover', name:'同盟顶班', ap:1, min:2, cat:'机会',
+    desc:'同期战友替你顶了一周班 · 搭档默契 +6 · 士气 +3',
+    fx:{ st:{ bond:6, morale:3 } } },
+  { id:'op_nemesis_watch', name:'被人盯着', ap:2, min:2, cat:'机会',
+    desc:'对手处处与你较劲 · 功勋 +200 · 士气 −3 · 威望 +2',
+    fx:{ merit:200, st:{ morale:-3, prestige:2 } } },
+  { id:'op_unit_honor', name:'单位荣立集体功', ap:2, min:3, cat:'机会', merit:600,
+    desc:'你带的单位荣立集体功 · 功勋 +600 · 威望 +5 · 凝聚力上升',
+    fx:{ merit:600, st:{ prestige:5 } }, flag:'unit_honor' },
+  { id:'op_equipment_new', name:'新装备列装', ap:2, min:3, cat:'机会',
+    desc:'带头完成新装备接装训练 · 专业能力 +5 · 技能点 +2',
+    fx:{ dv:{ professional:5 }, sp:2 } },
+  { id:'op_joint_host', name:'承办联合演练', ap:3, min:4, cat:'机会', merit:1100,
+    desc:'牵头承办跨军种演练 · 功勋 +1100 · 专业能力 +4 · 健康 −3',
+    fx:{ merit:1100, dv:{ professional:4 }, st:{ health:-3 } } }
 ];
 
 /* ---------- 同期军官 ---------- */
@@ -1152,10 +1607,46 @@ const RIVAL_NAMES = [
 ];
 const RIVAL_TAGS = ['稳健','拼劲足','实干','善交际','老成','肯钻研','敢闯','细致'];
 
+/* 对手 AI 性格：决定增长节奏、波动幅度与晋升倾向 */
+const RIVAL_STYLES = {
+  aggressive: { key:'aggressive', name:'拼抢型', meritMul:1.18, variance:0.28, promoBoost:0.12, setback:0.08,
+    blurb:'敢冲敢抢，起伏大，容易超车也容易翻车' },
+  balanced:   { key:'balanced',   name:'稳健型', meritMul:1.02, variance:0.12, promoBoost:0.02, setback:0.04,
+    blurb:'按部就班，很少大起大落' },
+  political:  { key:'political',  name:'人脉型', meritMul:0.96, variance:0.14, promoBoost:0.10, setback:0.05,
+    blurb:'善于经营关系，晋升有时快于实绩' },
+  technical:  { key:'technical',  name:'钻研型', meritMul:1.08, variance:0.10, promoBoost:0.04, setback:0.03,
+    blurb:'专业过硬，任务评价稳定偏高' },
+  social:     { key:'social',     name:'交际型', meritMul:1.00, variance:0.18, promoBoost:0.06, setback:0.07,
+    blurb:'机会多，但有时会因风头太劲被议论' }
+};
+
 /* 同期军官每回合的基准功勋收益（按阶段递增） */
 const RIVAL_GAIN = {
   recruit: 90, nco: 350, officer: 950, field: 1900,
   general: 2800, marshal: 2250, legacy: 750
+};
+
+/* 对手高光 / 翻车事件文案池 */
+const RIVAL_EVENT_POOL = {
+  boost: [
+    '在上级比武中拿了名次，一时风头很劲',
+    '牵头完成一项重点任务，评价很高',
+    '被选送到院校深造，履历又厚了一层',
+    '所在单位被树为典型，本人也被点名表扬'
+  ],
+  setback: [
+    '因工作疏漏被通报批评，晋升节奏被打乱',
+    '家里出了变故，状态明显下滑',
+    '一次任务评价不佳，威望受损',
+    '体检亮红灯，暂时离开高强度岗位'
+  ],
+  vsPlayer: [
+    '在同期讲评中被拿来和你比较',
+    '和你竞争同一个进修名额',
+    '在联合任务中被安排与你搭档',
+    '有人拿你们俩的履历做对照'
+  ]
 };
 
 /* ---------- 军衔肩章（用星数与样式表示） ---------- */
@@ -1234,6 +1725,11 @@ const ACHIEVEMENTS = [
   { id:'rank_general', name:'肩扛金星',   desc:'晋升至少将',              cond:s => s.rankIdx >= 16 },
   { id:'rank_marshal', name:'执掌一方',   desc:'晋升至上将',              cond:s => s.rankIdx >= 18 },
   { id:'rank_grand',   name:'设而未授',   desc:'晋升至大元帅',            cond:s => s.rankIdx >= 19 },
+  { id:'ach_review_best', name:'考评优秀', desc:'任期考评获得“优秀”3 次', cond:s => (s.flags.achReviewBest || 0) >= 3 },
+  { id:'ach_cyber',   name:'无形尖兵',   desc:'完成网络攻防演练',        cond:s => !!s.flags.cyber },
+  { id:'ach_quake',   name:'地动山摇',   desc:'完成抗震救灾任务',        cond:s => !!s.flags.rescue && !!s.flags.saved_village },
+  { id:'ach_honor',   name:'荣誉等身',   desc:'获得荣誉称号',            cond:s => !!s.flags.honor_title },
+  { id:'ach_saved_soldier', name:'拉住那只手', desc:'成功挽救一名战士',   cond:s => !!s.flags.saved_soldier },
   { id:'rank_nco',     name:'老兵',       desc:'以军士身份走完全程',      cond:s => s.rankIdx <= 8 && s.serviceYear >= 30 },
   { id:'rank_low',     name:'原地踏步',   desc:'服役满 20 年仍是列兵',    cond:s => s.rankIdx === 0 && s.serviceYear >= 20 },
   /* 路线 */
@@ -1271,8 +1767,246 @@ const ACHIEVEMENTS = [
   /* 生涯 */
   { id:'full50',       name:'五十年',     desc:'服役满 50 年',            cond:s => s.serviceYear >= 50 },
   { id:'merit100k',    name:'功勋十万',   desc:'累计功勋超过 100000',     cond:s => s.merit >= 100000 },
+  { id:'merit150k',    name:'功勋十五万', desc:'累计功勋超过 150000',     cond:s => s.merit >= 150000 },
   { id:'grand_bid',    name:'问鼎',       desc:'向上将之上的荣誉发起过冲击', cond:s => s.flags.achGrandBid },
-  { id:'all_deeds',    name:'走遍山河',   desc:'维和、抢险、边防都去过',  cond:s => s.flags.peace && s.flags.rescue && s.flags.tough_area }
+  { id:'all_deeds',    name:'走遍山河',   desc:'维和、抢险、边防都去过',  cond:s => s.flags.peace && s.flags.rescue && s.flags.tough_area },
+  { id:'qjts',        name:'强军统帅',   desc:'达成最高虚构结局',        cond:s => !!(s.ending && s.ending.id === 'e_qjts') },
+  { id:'top_post',    name:'机关之巅',   desc:'担任路线最高机关主要领导', cond:s => (POSITION_MAP[s.positionId] || {}).level >= 14 }
+];
+
+/* ============================================================
+   勋章墙
+   比成就更偏「表彰仪式感」：按战功 / 品格 / 成长 / 传承四类，
+   分金质、银质、铜质三档，跨周目永久收藏。
+   ============================================================ */
+const MEDAL_CATS = ['战功', '品格', '成长', '传承'];
+
+const MEDAL_TIERS = {
+  gold:   { key:'gold',   name:'金质', color:'#c9a227', ring:'#8a6a12' },
+  silver: { key:'silver', name:'银质', color:'#9aa3ad', ring:'#6b737c' },
+  bronze: { key:'bronze', name:'铜质', color:'#b07a4a', ring:'#7a5230' }
+};
+
+const MEDALS = [
+  /* ---- 战功 ---- */
+  { id:'md_star_s', name:'一等战功章', cat:'战功', tier:'gold',
+    desc:'累计取得 5 次 S 级任务评价', cond:s => (s.flags.achS || 0) >= 5 },
+  { id:'md_star_a', name:'二等战功章', cat:'战功', tier:'silver',
+    desc:'累计取得 5 次 A 级及以上评价', cond:s => (s.flags.achS || 0) + (s.flags.achA || 0) >= 5 },
+  { id:'md_star_first', name:'首战纪念章', cat:'战功', tier:'bronze',
+    desc:'首次完成任务推演', cond:s => (s.flags.taskCount || 0) >= 1 },
+  { id:'md_rescue', name:'抢险纪念章', cat:'战功', tier:'gold',
+    desc:'参加抗洪抢险或抗震救灾', cond:s => !!s.flags.rescue },
+  { id:'md_peace', name:'蓝盔纪念章', cat:'战功', tier:'gold',
+    desc:'参加国际维和行动', cond:s => !!s.flags.peace },
+  { id:'md_border', name:'戍边纪念章', cat:'战功', tier:'silver',
+    desc:'主动申请艰苦地区代职', cond:s => !!s.flags.tough_area },
+  { id:'md_cyber', name:'无形战线纪念章', cat:'战功', tier:'silver',
+    desc:'完成网络攻防演练', cond:s => !!s.flags.cyber },
+  { id:'md_grand_deed', name:'重大功勋章', cat:'战功', tier:'gold',
+    desc:'集齐五种重大功勋', cond:s => greatDeeds(s) >= 5 },
+  { id:'md_soldier_save', name:'生命线纪念章', cat:'战功', tier:'silver',
+    desc:'成功挽救一名战士', cond:s => !!s.flags.saved_soldier },
+  { id:'md_village', name:'堤坝上的命令章', cat:'战功', tier:'bronze',
+    desc:'危急关头选择先救群众', cond:s => !!s.flags.saved_village },
+
+  /* ---- 品格 ---- */
+  { id:'md_clean', name:'清风章', cat:'品格', tier:'gold',
+    desc:'当面退回不该收的东西', cond:s => !!s.flags.clean },
+  { id:'md_iron_disc', name:'铁纪章', cat:'品格', tier:'gold',
+    desc:'退役时作风纪律达到优秀', cond:s => s.dv.discipline >= 88 },
+  { id:'md_blame', name:'担当章', cat:'品格', tier:'silver',
+    desc:'替部属承担责任', cond:s => !!s.flags.took_blame },
+  { id:'md_gave', name:'让功章', cat:'品格', tier:'silver',
+    desc:'把立功名额让给同志', cond:s => !!s.flags.gave_merit || !!s.flags.gave_up || !!s.flags.gave_slot },
+  { id:'md_review', name:'考评优秀章', cat:'品格', tier:'silver',
+    desc:'任期考评获得「优秀」3 次', cond:s => (s.flags.achReviewBest || 0) >= 3 },
+  { id:'md_family', name:'家风章', cat:'品格', tier:'bronze',
+    desc:'退役时家庭关系和睦', cond:s => s.st.family >= 70 },
+
+  /* ---- 成长 ---- */
+  { id:'md_general', name:'将星章', cat:'成长', tier:'gold',
+    desc:'晋升至少将', cond:s => s.rankIdx >= 16 },
+  { id:'md_cmd_post', name:'主官章', cat:'成长', tier:'gold',
+    desc:'担任团长及以上军事主官', cond:s => {
+      const p = POSITION_MAP[s.positionId] || {};
+      return p.type === 'line' && p.level >= 9;
+    } },
+  { id:'md_pol_post', name:'铸魂岗位章', cat:'成长', tier:'silver',
+    desc:'担任营教导员及以上政工主官', cond:s => {
+      const p = POSITION_MAP[s.positionId] || {};
+      return p.type === 'pol' && p.level >= 7;
+    } },
+  { id:'md_stf_post', name:'机关柱石章', cat:'成长', tier:'silver',
+    desc:'担任处长及以上参谋机关职务', cond:s => {
+      const p = POSITION_MAP[s.positionId] || {};
+      return p.type === 'stf' && p.level >= 8;
+    } },
+  { id:'md_top_post', name:'统帅机关章', cat:'成长', tier:'gold',
+    desc:'担任路线最高机关主要领导（虚构岗位）', cond:s => {
+      const p = POSITION_MAP[s.positionId] || {};
+      return (p.level || 0) >= 14;
+    } },
+  { id:'md_qjts', name:'强军统帅章', cat:'传承', tier:'gold',
+    desc:'达成最高虚构结局「强军统帅」', cond:s => !!(s.ending && s.ending.id === 'e_qjts') },
+  { id:'md_marshal', name:'上将章', cat:'成长', tier:'gold',
+    desc:'晋升至上将', cond:s => s.rankIdx >= 18 },
+  { id:'md_field', name:'校官章', cat:'成长', tier:'silver',
+    desc:'晋升至少校', cond:s => s.rankIdx >= 12 },
+  { id:'md_officer', name:'尉官章', cat:'成长', tier:'bronze',
+    desc:'晋升至少尉', cond:s => s.rankIdx >= 9 },
+  { id:'md_skill_s', name:'精武章', cat:'成长', tier:'gold',
+    desc:'两项以上技能练到 S 级', cond:s => Object.keys(s.skills || {}).filter(k => s.skills[k] >= 6).length >= 2 },
+  { id:'md_attr_max', name:'登峰章', cat:'成长', tier:'gold',
+    desc:'任意一项属性达到上限', cond:s => ATTRS.some(a => s.attr[a.key] >= 110) },
+  { id:'md_rank1', name:'尖兵章', cat:'成长', tier:'silver',
+    desc:'生涯某阶段同期排名第一', cond:s => !!s.flags.everRank1 },
+  { id:'md_full', name:'服役纪念章', cat:'成长', tier:'bronze',
+    desc:'服役满 50 年', cond:s => s.serviceYear >= 50 },
+  { id:'md_honor', name:'荣誉称号章', cat:'成长', tier:'gold',
+    desc:'获得荣誉称号', cond:s => !!s.flags.honor_title },
+  { id:'md_reform', name:'改革先锋章', cat:'成长', tier:'silver',
+    desc:'推动训练改革并落地', cond:s => !!s.flags.reform },
+
+  /* ---- 传承 ---- */
+  { id:'md_heir3', name:'桃李章', cat:'传承', tier:'gold',
+    desc:'培养出 3 名接班人', cond:s => (s.heir || 0) >= 3 },
+  { id:'md_heir1', name:'带兵章', cat:'传承', tier:'bronze',
+    desc:'至少培养 1 名接班人', cond:s => (s.heir || 0) >= 1 },
+  { id:'md_legacy', name:'传承章', cat:'传承', tier:'silver',
+    desc:'以二周目身份开始新的生涯', cond:s => !!s.legacy },
+  { id:'md_child', name:'家国章', cat:'传承', tier:'bronze',
+    desc:'支持子女投身军旅', cond:s => !!s.flags.child_military },
+  { id:'md_married', name:'成家章', cat:'传承', tier:'bronze',
+    desc:'在军旅中组建家庭', cond:s => !!(s.familyInfo && s.familyInfo.married) },
+  { id:'md_ally', name:'袍泽章', cat:'品格', tier:'silver',
+    desc:'与同期军官结成同盟', cond:s => !!s.allyId },
+  { id:'md_unit_honor', name:'集体功章', cat:'战功', tier:'silver',
+    desc:'所带单位荣立集体功', cond:s => !!s.flags.unit_honor },
+  { id:'md_route_cmd', name:'指挥传承章', cat:'传承', tier:'silver',
+    desc:'走完军事指挥线', cond:s => s.route === 'command' },
+  { id:'md_route_pol', name:'政工传承章', cat:'传承', tier:'silver',
+    desc:'走完政治工作线', cond:s => s.route === 'political' },
+  { id:'md_route_stf', name:'参谋传承章', cat:'传承', tier:'silver',
+    desc:'走完参谋后装线', cond:s => s.route === 'staff' }
+];
+
+/* ---------- 难度 ---------- */
+const DIFFICULTIES = {
+  normal: {
+    key:'normal', name:'标准',
+    desc:'正常节奏，适合第一次完整体验。',
+    rivalMul:1, needMul:1, riskAdd:0, healthDecay:1, discDecay:1, taskMerit:1
+  },
+  hard: {
+    key:'hard', name:'艰难',
+    desc:'同期更卷、门槛更高、任务更险，负伤与失分更常见。',
+    rivalMul:1.22, needMul:1.12, riskAdd:0.04, healthDecay:1.35, discDecay:1.25, taskMerit:0.92
+  },
+  hell: {
+    key:'hell', name:'淬火',
+    desc:'近乎苛刻的环境：晋升极难，任务风险陡增，连败会招致更大危机。',
+    rivalMul:1.42, needMul:1.28, riskAdd:0.07, healthDecay:1.7, discDecay:1.5, taskMerit:0.85,
+    failStreakRisk: true, autoBlunder: 0.10
+  }
+};
+
+/* ---------- 时代（按服役年份） ---------- */
+const ERAS = [
+  { id:'era80', from:1,  to:12, name:'八十年代',
+    desc:'编制调整、正规化起步，比武竞赛和条令学习是主旋律。',
+    tag:'正规化' },
+  { id:'era90', from:13, to:24, name:'九十年代',
+    desc:'科技大练兵，机械化与信息化开始进入视野。',
+    tag:'科技练兵' },
+  { id:'era00', from:25, to:36, name:'新世纪初',
+    desc:'联合演训与非战争军事行动增多，军地协同要求更高。',
+    tag:'联合转型' },
+  { id:'era10', from:37, to:45, name:'深化改革期',
+    desc:'编制重塑、实战化训练，改革与转型成为关键词。',
+    tag:'实战化' },
+  { id:'era20', from:46, to:52, name:'强军新时代',
+    desc:'体系作战、人才培养与传承并重，将星之路进入收官。',
+    tag:'强军' }
+];
+
+function eraForYear(y) {
+  for (let i = 0; i < ERAS.length; i++) {
+    if (y >= ERAS[i].from && y <= ERAS[i].to) return ERAS[i];
+  }
+  return ERAS[ERAS.length - 1];
+}
+
+/* ---------- 部队编制（随阶段扩编） ---------- */
+const UNIT_TIERS = [
+  { stage:'recruit', name:'新兵连',   size:1 },
+  { stage:'nco',     name:'步兵班',   size:2 },
+  { stage:'officer', name:'步兵排',   size:3 },
+  { stage:'field',   name:'合成连',   size:4 },
+  { stage:'general', name:'合成营',   size:5 },
+  { stage:'marshal', name:'合成旅',   size:6 },
+  { stage:'legacy',  name:'荣誉单位', size:7 }
+];
+
+/* ---------- 军队职务（与军衔并行） ----------
+   军衔是等级，职务是岗位。同级军衔可任不同职务；
+   职务随阶段、路线与实绩任命，影响功勋系数、单位规模与可用行动。 */
+const POSITION_TYPES = {
+  line: { key:'line', name:'军事指挥', color:'#8a4a2a' },
+  pol:  { key:'pol',  name:'政治工作', color:'#8a2a4a' },
+  stf:  { key:'stf',  name:'参谋机关', color:'#2a4a8a' },
+  nco:  { key:'nco',  name:'军士骨干', color:'#3A5636' }
+};
+
+const POSITIONS = [
+  /* 军士 / 士兵 */
+  { id:'p_soldier', name:'战士',     type:'nco', level:0,  minRank:0, maxRank:1,  minStage:0, meritMul:1.00, unitSize:1 },
+  { id:'p_bonban',  name:'副班长',   type:'nco', level:1,  minRank:0, maxRank:3,  minStage:0, meritMul:1.04, unitSize:1 },
+  { id:'p_banzhang',name:'班长',     type:'nco', level:2,  minRank:1, maxRank:5,  minStage:1, meritMul:1.08, unitSize:2 },
+  { id:'p_paiZhang',name:'排长',     type:'nco', level:3,  minRank:3, maxRank:8,  minStage:1, meritMul:1.12, unitSize:3 },
+
+  /* 军事指挥线 */
+  { id:'p_fuLian',  name:'副连长',   type:'line', level:4, minRank:9,  maxRank:11, minStage:2, meritMul:1.14, unitSize:3, route:'command' },
+  { id:'p_lianZhang',name:'连长',    type:'line', level:5, minRank:10, maxRank:13, minStage:2, meritMul:1.18, unitSize:4, route:'command' },
+  { id:'p_fuYing',  name:'副营长',   type:'line', level:6, minRank:12, maxRank:14, minStage:3, meritMul:1.20, unitSize:4, route:'command' },
+  { id:'p_yingZhang',name:'营长',    type:'line', level:7, minRank:13, maxRank:15, minStage:3, meritMul:1.24, unitSize:5, route:'command' },
+  { id:'p_fuTuan',  name:'副团长',   type:'line', level:8, minRank:14, maxRank:16, minStage:3, meritMul:1.26, unitSize:5, route:'command' },
+  { id:'p_tuanZhang',name:'团长',    type:'line', level:9, minRank:15, maxRank:17, minStage:4, meritMul:1.30, unitSize:6, route:'command' },
+  { id:'p_lvZhang', name:'旅长',     type:'line', level:10,minRank:16, maxRank:18, minStage:4, meritMul:1.34, unitSize:6, route:'command' },
+  { id:'p_shiZhang',name:'师长',     type:'line', level:11,minRank:16, maxRank:18, minStage:4, meritMul:1.36, unitSize:7, route:'command' },
+  { id:'p_junZhang',name:'军长',     type:'line', level:12,minRank:17, maxRank:19, minStage:5, meritMul:1.40, unitSize:7, route:'command' },
+  { id:'p_zhanqu',  name:'战区副职', type:'line', level:13,minRank:18, maxRank:19, minStage:5, meritMul:1.36, unitSize:7, route:'command' },
+  { id:'p_zhihuiTop',name:'联合指挥机构主要领导', type:'line', level:14, minRank:19, maxRank:19, minStage:5, meritMul:1.40, unitSize:7, route:'command' },
+
+  /* 政治工作线 */
+  { id:'p_fuBanZhi',name:'副班长（政工）', type:'pol', level:2, minRank:1, maxRank:4,  minStage:0, meritMul:1.05, unitSize:1 },
+  { id:'p_zhiDaoYuan',name:'连指导员', type:'pol', level:5, minRank:9,  maxRank:12, minStage:2, meritMul:1.16, unitSize:3, route:'political' },
+  { id:'p_jiaoDaoYuan',name:'营教导员', type:'pol', level:7, minRank:12, maxRank:15, minStage:3, meritMul:1.22, unitSize:4, route:'political' },
+  { id:'p_tuanZhengWei',name:'团政委', type:'pol', level:9, minRank:14, maxRank:17, minStage:3, meritMul:1.28, unitSize:5, route:'political' },
+  { id:'p_lvZhengWei',name:'旅政委',  type:'pol', level:10,minRank:16, maxRank:18, minStage:4, meritMul:1.32, unitSize:6, route:'political' },
+  { id:'p_shiZhengWei',name:'师政委', type:'pol', level:11,minRank:16, maxRank:18, minStage:4, meritMul:1.35, unitSize:6, route:'political' },
+  { id:'p_junZhengWei',name:'军政委', type:'pol', level:12,minRank:17, maxRank:19, minStage:5, meritMul:1.40, unitSize:7, route:'political' },
+  { id:'p_zhengzhiBu',name:'政治工作部领导', type:'pol', level:13, minRank:18, maxRank:19, minStage:5, meritMul:1.36, unitSize:7, route:'political' },
+  { id:'p_zhengTop',name:'政治工作最高机关领导', type:'pol', level:14, minRank:19, maxRank:19, minStage:5, meritMul:1.40, unitSize:7, route:'political' },
+
+  /* 参谋机关线 */
+  { id:'p_canmou',  name:'参谋',     type:'stf', level:4, minRank:9,  maxRank:12, minStage:2, meritMul:1.14, unitSize:2, route:'staff' },
+  { id:'p_fuKeZhang',name:'副科长',  type:'stf', level:5, minRank:10, maxRank:13, minStage:2, meritMul:1.18, unitSize:2, route:'staff' },
+  { id:'p_keZhang', name:'科长',     type:'stf', level:6, minRank:12, maxRank:14, minStage:3, meritMul:1.22, unitSize:3, route:'staff' },
+  { id:'p_fuChuZhang',name:'副处长', type:'stf', level:7, minRank:13, maxRank:15, minStage:3, meritMul:1.25, unitSize:3, route:'staff' },
+  { id:'p_chuZhang',name:'处长',     type:'stf', level:8, minRank:14, maxRank:16, minStage:3, meritMul:1.28, unitSize:4, route:'staff' },
+  { id:'p_fuBuZhang',name:'副部长',  type:'stf', level:9, minRank:15, maxRank:17, minStage:4, meritMul:1.32, unitSize:4, route:'staff' },
+  { id:'p_buZhang', name:'部长',     type:'stf', level:10,minRank:16, maxRank:18, minStage:4, meritMul:1.36, unitSize:5, route:'staff' },
+  { id:'p_canZhang',name:'参谋部领导', type:'stf', level:12, minRank:17, maxRank:19, minStage:5, meritMul:1.36, unitSize:6, route:'staff' },
+  { id:'p_zhanlueTop',name:'战略筹划机关主要领导', type:'stf', level:14, minRank:19, maxRank:19, minStage:5, meritMul:1.40, unitSize:7, route:'staff' }
+];
+
+const POSITION_MAP = {};
+POSITIONS.forEach(p => { POSITION_MAP[p.id] = p; });
+
+const UNIT_NAME_POOL = [
+  '大功三连','硬骨头六连','钢铁四连','猛虎连','尖刀连','红一连',
+  '老虎团','铁军营','先锋营','英雄营','老虎连','模范连'
 ];
 
 /* ---------- 家训（二周目继承，从父辈生涯中提炼） ---------- */
@@ -1318,6 +2052,16 @@ const LEGACY_EVENTS = [
         fx:{ st:{ prestige:5, trust:-3 } } },
       { label:'主动申请去最苦的地方',     hint:'意志 +5 · 功勋 +600 · 健康 −5',
         fx:{ attr:{ yizhi:5 }, merit:600, st:{ health:-5 } }, flag:'tough_area' }
+    ] },
+  { id:'ev_legacy_visit', title:'父辈老部下来访', min:3, max:6, weight:10, once:true, legacyOnly:true,
+    text:'{prename}当年带过的几个兵，如今也都是主官了。他们约你吃饭，席间说起很多旧事。',
+    options:[
+      { label:'认真听，记下带兵心得',     hint:'统率 +4 · 政治素养 +3',
+        fx:{ attr:{ tongshuai:4 }, dv:{ political:3 } } },
+      { label:'请他们帮你带一带新干部',   hint:'培养接班人机会 · 威望 +3',
+        fx:{ heir:1, st:{ prestige:3 } } },
+      { label:'只叙旧，不谈工作',         hint:'家庭 +3 · 士气 +4',
+        fx:{ st:{ family:3, morale:4 } } }
     ] }
 ];
 
@@ -1453,6 +2197,48 @@ const CHAIN_EVENTS = [
         fx:{ st:{ family:4, prestige:2 } } },
       { label:'劝他别走这条路',         hint:'家庭 +2 · 信念 −4',
         fx:{ st:{ family:2 }, attr:{ xinnian:-4 } } }
+    ] },
+
+  /* ---------- 链：审查风波 ---------- */
+  { id:'ev_ch_audit1', title:'谈话函询', min:3, max:5, weight:13, once:true,
+    text:'纪检部门约你谈话，核实一封匿名信里的几条线索。事情不大，但很敏感。',
+    options:[
+      { label:'如实说明全部情况',           hint:'纪律 +5 · 首长信任 +3',
+        fx:{ dv:{ discipline:5 }, st:{ trust:3 } }, chain:{ id:'ev_ch_audit2', delay:2 } },
+      { label:'只说自己清楚的部分',         hint:'纪律 +2 · 有隐患',
+        fx:{ dv:{ discipline:2 } },
+        hidden:{ chance:0.4, note:'后续核查发现表述不完整', st:{ trust:-4 } },
+        chain:{ id:'ev_ch_audit2b', delay:3 } },
+      { label:'请组织全面核查',             hint:'纪律 +4 · 威望 +2',
+        fx:{ dv:{ discipline:4 }, st:{ prestige:2 } }, chain:{ id:'ev_ch_audit2', delay:2 } }
+    ] },
+  { id:'ev_ch_audit2', title:'查清了', min:3, max:6, weight:0, once:true, chained:true,
+    text:'核查结论出来了：举报不实。组织在一定范围内做了澄清。',
+    options:[
+      { label:'请求不扩大影响',             hint:'威望 +3 · 信念 +3',
+        fx:{ st:{ prestige:3 }, attr:{ xinnian:3 } } },
+      { label:'建议完善相关制度',           hint:'专业能力 +4 · 纪律 +3',
+        fx:{ dv:{ professional:4, discipline:3 } }, flag:'reform' }
+    ] },
+  { id:'ev_ch_audit2b', title:'越描越黑', min:3, max:6, weight:0, once:true, chained:true,
+    text:'事情拖了一段时间。虽然没有定性，但议论还在。首长找你又谈了一次。',
+    options:[
+      { label:'深刻检查，主动整改',         hint:'纪律 +6 · 首长信任 +2 · 威望 −3',
+        fx:{ dv:{ discipline:6 }, st:{ trust:2, prestige:-3 } } },
+      { label:'申请调离当前岗位避嫌',       hint:'家庭 +3 · 首长信任 −5 · 功勋 −200',
+        fx:{ st:{ family:3, trust:-5 }, merit:-200 } }
+    ] },
+
+  /* ---------- 链：同盟或宿敌 ---------- */
+  { id:'ev_ch_ally1', title:'一次并肩', min:2, max:4, weight:11, once:true,
+    text:'联合任务里，你和同期的老对手被编在同一组。配合意外地顺。',
+    options:[
+      { label:'任务后公开肯定他',           hint:'搭档默契 +5 · 威望 +3 · 可能化敌为友',
+        fx:{ st:{ bond:5, prestige:3 } }, flag:'seek_ally' },
+      { label:'只谈工作，不谈交情',         hint:'纪律 +2 · 专业能力 +3',
+        fx:{ dv:{ discipline:2, professional:3 } } },
+      { label:'借机压他一头',               hint:'功勋 +250 · 宿敌值上升',
+        fx:{ merit:250 }, flag:'seek_nemesis' }
     ] }
 ];
 
@@ -1463,6 +2249,14 @@ const CHAIN_EVENTS = [
 
 const NPC_SURNAMES = ['周','李','孙','陈','王','刘','赵','杨','黄','吴','徐','郑','马','林','高','谢','何','罗','秦','曹'];
 const NPC_GIVEN = ['建国','卫东','志强','立新','振华','铁军','明远','海涛','志刚','晓峰','国栋','云飞','长胜','向阳','建军','文斌','守成','大鹏','立国','永强'];
+
+/* ---------- 家庭线 ---------- */
+const SPOUSE_SURNAMES = ['林','沈','苏','顾','叶','程','宋','许','韩','唐','方','夏'];
+const SPOUSE_GIVEN = ['晓雯','静怡','慧敏','雨桐','雅琴','梦瑶','佳宁','若曦','诗涵','安然','清越','书兰'];
+const KID_GIVEN_BOY = ['子轩','浩然','俊哲','宇航','子墨','一鸣','博文','承宇'];
+const KID_GIVEN_GIRL = ['诗琪','欣怡','语桐','若彤','嘉怡','清菡','雨萱','念安'];
+
+/* ---------- 审查风波 / 家庭 / 同盟宿敌 等链事件已并入 CHAIN_EVENTS ---------- */
 const NPC_TAGS = ['沉稳','火爆','细致','圆滑','实干','耿直','机灵','木讷','要强','随和','寡言','爽快'];
 
 const NPC_ROLES = {

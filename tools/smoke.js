@@ -92,6 +92,8 @@ while (!S.ended && turns < 80) {
       showStage(it.data); closeModal();
     } else if (it.type === 'echo') {
       showEcho(it.data); closeModal();
+    } else if (it.type === 'review') {
+      showReview(it.data); closeModal();
     }
   }
   if (!S.ended) { beginTurn(S); renderAll(); }

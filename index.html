@@ -2,30 +2,42 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#3A5636" />
+<meta name="format-detection" content="telephone=no" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <title>将星之路 · 军事生涯模拟</title>
 <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 <div id="app">
   <header class="topbar">
-    <div class="brand">
-      <span class="brand-mark"></span>
-      <div class="brand-text">
-        <h1>将星之路</h1>
-        <p>军事生涯模拟</p>
+    <div class="topbar-id">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <div class="brand-text">
+          <h1>将星之路</h1>
+          <p>军事生涯模拟</p>
+        </div>
       </div>
+      <div class="insignia" id="insignia" aria-hidden="true"></div>
     </div>
     <div class="career" id="career"></div>
-    <div class="topbar-actions">
+    <nav class="topbar-actions" id="topActions" aria-label="功能">
       <button class="btn ghost" id="btnRoute">成长路线</button>
       <button class="btn ghost" id="btnNetwork">关系网</button>
       <button class="btn ghost" id="btnRank">同期排名</button>
       <button class="btn ghost" id="btnSkills">技能树</button>
       <button class="btn ghost" id="btnAchv">成就</button>
+      <button class="btn ghost" id="btnMedals">勋章墙</button>
+      <button class="btn ghost" id="btnProfile">生涯档案</button>
+      <button class="btn ghost" id="btnSaveIO">存档</button>
+      <button class="btn ghost" id="btnHelp" title="玩法与快捷键">帮助</button>
+      <button class="btn ghost" id="btnTheme" title="切换深浅色">主题</button>
       <button class="btn ghost" id="btnHistory">履历</button>
       <button class="btn ghost" id="btnRestart">重新开始</button>
-    </div>
+    </nav>
   </header>
 
   <div class="merit-wrap" id="meritWrap">
