@@ -260,10 +260,8 @@ a { color: var(--olive); }
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 2px 0;
   padding: 4px 4px calc(4px + var(--safe-b));
-  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  background: var(--surface);
   border-top: 1px solid var(--border);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   overflow: hidden;
   max-width: 100vw;
 }
@@ -311,7 +309,7 @@ a { color: var(--olive); }
 }
 
 html.theme-dark .bottom-nav {
-  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  background: var(--surface);
 }
 
 @media (min-width: 900px) {

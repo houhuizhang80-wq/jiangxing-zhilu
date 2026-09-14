@@ -131,6 +131,8 @@ function bindKeys() {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     const k = (e.key || '').toLowerCase();
     if (k === 'escape') {
+      // 流程弹窗（事件/任务/晋升）不可 Esc 关闭，避免队列卡死
+      if (window.__flowLock) return;
       if (document.getElementById('modalRoot') && document.getElementById('modalRoot').innerHTML) closeModal();
       return;
     }
@@ -705,7 +707,7 @@ function renderMain() {
       <div class="card-head"><span>生涯日志</span><span>共 ${S.log.length} 条</span></div>
       <div class="card-body">
         <div class="log-list">
-          ${S.log.slice(0, 40).map(l => `
+          ${S.log.slice(0, 24).map(l => `
             <div class="log-item ${l.kind}">
               <span class="ly">第${l.year}年</span>
               <span><b>${l.title}</b> · ${l.text}</span>
@@ -727,36 +729,68 @@ function onAutoArrange() {
   scheduleRender();
 }
 function onEndTurn() {
-  const res = finishTurn(S);
-  QUEUE = res.queue || [];
-  saveGame(S);
-  if (res.finished) { showEnding(); return; }
-  processQueue();
+  if (!S || S.ended) return;
+  // 弹窗打开时禁止再结束回合，防止队列被覆盖导致卡死
+  const mr = $('modalRoot');
+  if (mr && mr.innerHTML) return;
+  if (window.__endingTurn) return;
+  window.__endingTurn = true;
+  try {
+    const res = finishTurn(S);
+    QUEUE = res.queue || [];
+    saveGame(S);
+    if (res.finished) { showEnding(); return; }
+    processQueue();
+  } catch (err) {
+    try { console.error('onEndTurn', err); } catch (e) {}
+    QUEUE = [];
+    closeModal();
+    beginTurn(S);
+    saveGame(S);
+    renderAll();
+  } finally {
+    window.__endingTurn = false;
+  }
 }
 
 /* ================= 队列 ================= */
 function processQueue() {
-  if (S.ended) { showEnding(); return; }
-  if (QUEUE.length === 0) {
-    beginTurn(S);
-    saveGame(S);
-    renderAll();
-    return;
+  try {
+    if (!S) { closeModal(); return; }
+    if (S.ended) { showEnding(); return; }
+    if (!QUEUE || QUEUE.length === 0) {
+      window.__flowLock = false;
+      beginTurn(S);
+      saveGame(S);
+      renderAll();
+      return;
+    }
+    const item = QUEUE.shift();
+    if (!item) { processQueue(); return; }
+    if (item.type === 'stage') showStage(item.data);
+    else if (item.type === 'echo') showEcho(item.data);
+    else if (item.type === 'route') showRouteChoice();
+    else if (item.type === 'event') showEvent(item.data);
+    else if (item.type === 'task') showTask(item.data);
+    else if (item.type === 'promotion') showPromotion(item.data);
+    else if (item.type === 'review') showReview(item.data);
+    else if (item.type === 'era') showEra(item.data);
+    else processQueue();
+  } catch (err) {
+    try { console.error('processQueue', err); } catch (e) {}
+    QUEUE = [];
+    window.__flowLock = false;
+    closeModal();
+    if (S && !S.ended) {
+      beginTurn(S);
+      saveGame(S);
+      renderAll();
+    }
   }
-  const item = QUEUE.shift();
-  if (item.type === 'stage') showStage(item.data);
-  else if (item.type === 'echo') showEcho(item.data);
-  else if (item.type === 'route') showRouteChoice();
-  else if (item.type === 'event') showEvent(item.data);
-  else if (item.type === 'task') showTask(item.data);
-  else if (item.type === 'promotion') showPromotion(item.data);
-  else if (item.type === 'review') showReview(item.data);
-  else if (item.type === 'era') showEra(item.data);
-  else processQueue();
 }
 
 function showEra(era) {
-  openModal(`
+  openFlowModal(`
     <div class="modal-head">
       <div class="kicker">时代变迁</div>
       <h2>${era.name}</h2>
@@ -774,7 +808,7 @@ function showReview(data) {
   const gradeCls = data.grade === '优秀' ? 'grade-S'
     : data.grade === '称职' ? 'grade-A'
     : data.grade === '基本称职' ? 'grade-C' : 'grade-D';
-  openModal(`
+  openFlowModal(`
     <div class="modal-head">
       <div class="kicker">第 ${data.year} 年 · ${data.rankName}</div>
       <h2>${data.title}</h2>
@@ -824,7 +858,7 @@ function routeCards() {
 }
 
 function showRouteChoice() {
-  openModal(`
+  openFlowModal(`
     <div class="modal-head">
       <div class="kicker">生涯抉择 · 第 ${S.year} 年</div>
       <h2>选择你的成长路线</h2>
@@ -898,13 +932,19 @@ function onSwitchRoute(key) {
 }
 
 /* ================= 弹窗基础 ================= */
-function openModal(html, wide) {
+function openModal(html, wide, opts) {
+  const o = opts || {};
   if (document.body && document.body.classList) document.body.classList.add('modal-open');
+  window.__flowLock = !!o.flow;
   $('modalRoot').innerHTML = `<div class="overlay"><div class="modal ${wide ? 'wide' : ''}">${html}</div></div>`;
 }
 function closeModal() {
+  window.__flowLock = false;
   if (document.body && document.body.classList) document.body.classList.remove('modal-open');
   $('modalRoot').innerHTML = '';
+}
+function openFlowModal(html, wide) {
+  openModal(html, wide, { flow: true });
 }
 
 function rewardChips(changes) {
@@ -918,7 +958,7 @@ function rewardChips(changes) {
 
 /* ================= 阶段推进 ================= */
 function showStage(st) {
-  openModal(`
+  openFlowModal(`
     <div class="modal-head"><div class="kicker">阶段推进</div><h2>${st.name}</h2></div>
     <div class="modal-body">
       <div class="narrative">${st.desc}</div>
@@ -942,7 +982,7 @@ function showEcho(rule) {
       chips.push({ label: name || k, v: fx[g][k] });
     });
   });
-  openModal(`
+  openFlowModal(`
     <div class="modal-head"><div class="kicker">往事回响</div><h2>因果</h2></div>
     <div class="modal-body">
       <div class="narrative">${rule.text}</div>
@@ -1059,12 +1099,16 @@ function openMedals() {
 
 /* ================= 事件 ================= */
 function showEvent(ev) {
+  if (!ev || !ev.options || !ev.options.length) {
+    processQueue();
+    return;
+  }
   const opts = ev.options.map((o, i) => `
-    <button class="opt ${o.risky ? 'risky' : ''}" onclick="onEventOption(${i})">
+    <button type="button" class="opt ${o.risky ? 'risky' : ''}" onclick="onEventOption(${i})">
       <div class="o-label">${o.label}</div>
       <div class="o-hint">${o.hint || ''}</div>
     </button>`).join('');
-  openModal(`
+  openFlowModal(`
     <div class="modal-head">
       <div class="kicker">抉择 · 第 ${S.year} 年${ev.chained ? ' · 后续' : ''}${ev.legacyOnly ? ' · 家风' : ''}</div>
       <h2>${ev.title}</h2>
@@ -1079,10 +1123,15 @@ function showEvent(ev) {
 
 function onEventOption(i) {
   const ev = window.__curEvent;
+  if (!ev || !ev.options || !ev.options[i]) {
+    closeModal();
+    processQueue();
+    return;
+  }
   const opt = ev.options[i];
   const r = applyOption(S, ev, opt);
   const all = r.changes.concat(r.hiddenChanges || []);
-  openModal(`
+  openFlowModal(`
     <div class="modal-head"><div class="kicker">结果</div><h2>${ev.title}</h2></div>
     <div class="modal-body">
       <div class="narrative">${r.hiddenNote ? '事情没有按你想的方向走——' + r.hiddenNote + '。' : '你的选择已经做出，结果随之而来。'}</div>
@@ -1147,7 +1196,7 @@ function renderDeploy() {
       </div>`;
   }).join('');
 
-  openModal(`
+  openFlowModal(`
     <div class="modal-head">
       <div class="kicker">${t.layer} · 第 ${S.year} 年</div>
       <h2>${t.name}</h2>
@@ -1224,7 +1273,7 @@ function renderDecision() {
       </button>`;
   }).join('');
 
-  openModal(`
+  openFlowModal(`
     <div class="modal-head">
       <div class="kicker">${run.task.layer}</div>
       <h2>${run.task.name}</h2>
@@ -1276,7 +1325,7 @@ function settleTask() {
   const decList = TASK_RUN.decisionLog.map(d =>
     `<div class="dec-item"><div class="dec-q">${d.text}</div><div class="dec-a">→ ${d.choice}</div></div>`).join('');
 
-  openModal(`
+  openFlowModal(`
     <div class="modal-head">
       <div class="kicker">${TASK_RUN.task.layer}</div>
       <h2>${TASK_RUN.task.name}</h2>
@@ -1307,7 +1356,7 @@ function gradeTitle(g) {
 function showPromotion(pr) {
   if (pr.blocked) {
     sfx('bad');
-    openModal(`
+    openFlowModal(`
       <div class="modal-head"><div class="kicker">晋升评定</div><h2>晋升暂缓</h2></div>
       <div class="modal-body">
         <div class="narrative">${pr.reason}。功勋已经够了，但门槛没过去。</div>
@@ -1322,7 +1371,7 @@ function showPromotion(pr) {
   sfx('promo');
   const sc = pr.score;
   const rk = myRank(S);
-  openModal(`
+  openFlowModal(`
     <div class="modal-head"><div class="kicker">授衔仪式</div><h2>晋升 ${pr.to}</h2></div>
     <div class="modal-body">
       <div class="promo-art">${insigniaSVG(pr.idx, 150)}</div>
