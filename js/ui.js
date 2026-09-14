@@ -160,13 +160,16 @@ function setNavActive(key) {
   });
 }
 
-function scrollToEl(el) {
-  if (!el || !el.scrollIntoView) return;
+function setMobileView(view) {
+  const v = view === 'stats' ? 'stats' : 'turn';
+  try { document.body.setAttribute('data-view', v); } catch (e) {}
+  setNavActive(v);
+}
+
+function isMobileUI() {
   try {
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  } catch (e) {
-    el.scrollIntoView();
-  }
+    return typeof matchMedia === 'function' && matchMedia('(max-width: 768px)').matches;
+  } catch (e) { return false; }
 }
 
 function bindBottomNav() {
@@ -176,10 +179,11 @@ function bindBottomNav() {
     const btn = e.target && e.target.closest ? e.target.closest('.nav-item') : null;
     if (!btn) return;
     const key = btn.getAttribute('data-nav');
-    setNavActive(key);
     sfx('click');
-    if (key === 'turn') { scrollToEl($('main')); return; }
-    if (key === 'stats') { scrollToEl($('sidebar')); return; }
+    // 手机：回合/属性只切主面板，不弹窗
+    if (key === 'turn') { setMobileView('turn'); window.scrollTo(0, 0); return; }
+    if (key === 'stats') { setMobileView('stats'); window.scrollTo(0, 0); return; }
+    setNavActive(key);
     if (key === 'more') { openMoreSheet(); return; }
     if (key === 'route') openRoute();
     else if (key === 'network') openNetwork();
@@ -528,17 +532,17 @@ function renderTop() {
   $('insignia').innerHTML = insigniaSVG(S.rankIdx, 84);
   const pos = getPosition(S);
   $('career').innerHTML = `
-    <div class="career-item"><span class="k">姓名</span><span class="v">${S.name}${motto ? ` <span class="mini-tag">${motto.name}</span>` : ''}</span></div>
-    <div class="career-item"><span class="k">出身</span><span class="v">${en.short}</span></div>
+    <div class="career-item opt-item"><span class="k">姓名</span><span class="v">${S.name}${motto ? ` <span class="mini-tag">${motto.name}</span>` : ''}</span></div>
+    <div class="career-item opt-item"><span class="k">出身</span><span class="v">${en.short}</span></div>
     <div class="career-item"><span class="k">军衔</span><span class="v rank">${rank.name}</span></div>
     <div class="career-item"><span class="k">职务</span><span class="v" style="color:${POSITION_TYPES[pos.type] ? POSITION_TYPES[pos.type].color : 'var(--olive)'}">${pos.name}</span></div>
-    <div class="career-item"><span class="k">年龄</span><span class="v">${S.age} 岁</span></div>
-    <div class="career-item"><span class="k">阶段</span><span class="v">${st.name}</span></div>
+    <div class="career-item"><span class="k">年龄</span><span class="v">${S.age}岁</span></div>
+    <div class="career-item opt-item"><span class="k">阶段</span><span class="v">${st.name}</span></div>
     ${route
-      ? `<div class="career-item"><span class="k">路线</span><span class="v" style="color:${route.color}">${route.short}</span></div>`
-      : `<div class="career-item"><span class="k">路线</span><span class="v" style="color:var(--text-3)">未定</span></div>`}
-    <div class="career-item"><span class="k">存档槽</span><span class="v">${S.slot || getActiveSlot()} / ${SAVE_SLOT_COUNT}</span></div>
-    <div class="career-item"><span class="k">同期位次</span><span class="v ${rk.pos <= 2 ? 'good' : rk.pos >= 7 ? 'bad' : ''}">第 ${rk.pos} / ${rk.total}</span></div>`;
+      ? `<div class="career-item opt-item"><span class="k">路线</span><span class="v" style="color:${route.color}">${route.short}</span></div>`
+      : `<div class="career-item opt-item"><span class="k">路线</span><span class="v" style="color:var(--text-3)">未定</span></div>`}
+    <div class="career-item opt-item"><span class="k">存档槽</span><span class="v">${S.slot || getActiveSlot()}/${SAVE_SLOT_COUNT}</span></div>
+    <div class="career-item"><span class="k">位次</span><span class="v ${rk.pos <= 2 ? 'good' : rk.pos >= 7 ? 'bad' : ''}">${rk.pos}/${rk.total}</span></div>`;
 
   const next = RANKS[S.rankIdx + 1];
   const capReached = next && (S.rankIdx + 1) > st.maxRank;
@@ -609,6 +613,18 @@ function renderSidebar() {
         <div class="unit-meta">${POSITION_TYPES[getPosition(S).type] ? POSITION_TYPES[getPosition(S).type].name : ''} · ${S.unit ? S.unit.name : '—'} · 功勋系数 ×${(getPosition(S).meritMul || 1).toFixed(2)}</div>
         <div class="unit-meta">编制 ${S.unit ? S.unit.size : '—'} · 荣誉 ${S.unit ? S.unit.honor : 0} · 减员 ${S.unit ? S.unit.losses : 0}</div>
         ${S.unit ? bar('凝聚力', S.unit.cohesion, 100, 'prestige') + bar('训练水平', S.unit.training, 100, 'trust') : ''}
+      </div>
+    </div>
+    <div class="card log-side">
+      <div class="card-head"><span>生涯日志</span><span>${S.log.length}</span></div>
+      <div class="card-body">
+        <div class="log-list">
+          ${S.log.slice(0, 20).map(l => `
+            <div class="log-item ${l.kind}">
+              <span class="ly">第${l.year}年</span>
+              <span><b>${l.title}</b> · ${l.text}</span>
+            </div>`).join('') || '<div class="empty">还没有记录。</div>'}
+        </div>
       </div>
     </div>
     <div class="card">
@@ -685,7 +701,7 @@ function renderMain() {
       <div class="card-body"><div class="action-groups">${groupsHTML}</div></div>
     </div>
 
-    <div class="card">
+    <div class="card log-card">
       <div class="card-head"><span>生涯日志</span><span>共 ${S.log.length} 条</span></div>
       <div class="card-body">
         <div class="log-list">
