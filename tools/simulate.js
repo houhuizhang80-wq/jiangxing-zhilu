@@ -96,6 +96,7 @@ function pct(arr, p) {
 function run(N, mode, routeKey) {
   const label = mode + (routeKey ? ' · ' + ROUTES[routeKey].name : '');
   const rankCount = {};
+  const posCount = {};
   const stageReach = { recruit:0, nco:0, officer:0, field:0, general:0, marshal:0, legacy:0 };
   let meritSum = 0, prestigeSum = 0, discSum = 0, yearsSum = 0, deadCount = 0, heirSum = 0;
   let moraleSum = 0, healthSum = 0, posSum = 0, posN = 0, topCount = 0, bottomCount = 0;
@@ -109,6 +110,8 @@ function run(N, mode, routeKey) {
   for (let i = 0; i < N; i++) {
     const s = runOne(mode, routeKey);
     rankCount[RANKS[s.rankIdx].name] = (rankCount[RANKS[s.rankIdx].name] || 0) + 1;
+    const posName = (typeof getPosition === 'function' ? getPosition(s).name : (s.positionId || '—'));
+    posCount[posName] = (posCount[posName] || 0) + 1;
     meritSum += s.merit; prestigeSum += s.st.prestige; moraleSum += s.st.morale;
     healthSum += s.st.health; discSum += s.dv.discipline; yearsSum += s.serviceYear;
     heirSum += (s.heir || 0);
@@ -156,6 +159,11 @@ function run(N, mode, routeKey) {
   RANKS.forEach(r => {
     const c = rankCount[r.name] || 0;
     if (c) console.log('  ' + r.name.padEnd(6, '　') + ' ' + (c / N * 100).toFixed(1) + '%  (' + c + ')');
+  });
+  console.log('--- 最终职务分布 ---');
+  Object.keys(posCount).sort((a, b) => posCount[b] - posCount[a]).forEach(name => {
+    const c = posCount[name];
+    if (c) console.log('  ' + name + '　' + (c / N * 100).toFixed(1) + '%  (' + c + ')');
   });
   console.log('--- 结局分布 ---');
   Object.keys(endingCount).sort((a,b) => endingCount[b]-endingCount[a]).forEach(k =>
