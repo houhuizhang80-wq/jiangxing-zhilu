@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#3A5636" />
+<meta name="format-detection" content="telephone=no" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<title>将星之路 · 军事生涯模拟</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body data-view="turn">
+<div id="app">
+  <header class="topbar">
+    <div class="topbar-id">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <div class="brand-text">
+          <h1>将星之路</h1>
+          <p>军事生涯模拟</p>
+        </div>
+      </div>
+      <div class="insignia" id="insignia" aria-hidden="true"></div>
+    </div>
+    <div class="career" id="career"></div>
+  </header>
+
+  <div class="merit-wrap" id="meritWrap">
+    <div class="merit-track"><div class="merit-fill" id="meritFill"></div></div>
+    <div class="merit-label" id="meritLabel"></div>
+  </div>
+
+  <main class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <section class="main" id="main"></section>
+  </main>
+
+  <footer class="disclaimer">
+    本作品为虚构军事题材模拟游戏。人物、部队番号、事件与战役均系虚构，不涉及任何现实人物、单位与事件。
+  </footer>
+</div>
+
+<!-- 底部：两行按钮菜单，全部在一屏内，无需左右滑 -->
+<nav class="bottom-nav" id="bottomNav" aria-label="功能菜单">
+  <button type="button" class="nav-item on" data-nav="turn" id="navTurn"><span class="nav-ico">☰</span><span>回合</span></button>
+  <button type="button" class="nav-item" data-nav="stats" id="navStats"><span class="nav-ico">▦</span><span>属性</span></button>
+  <button type="button" class="nav-item" data-nav="route" id="btnRoute"><span class="nav-ico">↗</span><span>路线</span></button>
+  <button type="button" class="nav-item" data-nav="network" id="btnNetwork"><span class="nav-ico">人</span><span>关系</span></button>
+  <button type="button" class="nav-item" data-nav="rank" id="btnRank"><span class="nav-ico">序</span><span>排名</span></button>
+  <button type="button" class="nav-item" data-nav="skills" id="btnSkills"><span class="nav-ico">★</span><span>技能</span></button>
+  <button type="button" class="nav-item" data-nav="achv" id="btnAchv"><span class="nav-ico">☆</span><span>成就</span></button>
+  <button type="button" class="nav-item" data-nav="medals" id="btnMedals"><span class="nav-ico">◎</span><span>勋章</span></button>
+  <button type="button" class="nav-item" data-nav="profile" id="btnProfile"><span class="nav-ico">档</span><span>档案</span></button>
+  <button type="button" class="nav-item" data-nav="history" id="btnHistory"><span class="nav-ico">时</span><span>履历</span></button>
+  <button type="button" class="nav-item" data-nav="save" id="btnSaveIO"><span class="nav-ico">▣</span><span>存档</span></button>
+  <button type="button" class="nav-item" data-nav="more" id="navMore"><span class="nav-ico">⋯</span><span>更多</span></button>
+</nav>
+
+<div id="moreActions" hidden>
+  <button type="button" id="btnHelp">帮助</button>
+  <button type="button" id="btnTheme">主题</button>
+  <button type="button" id="btnRestart">重新开始</button>
+</div>
+
+<div id="modalRoot"></div>
+
+<script src="js/data.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>
